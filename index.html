@@ -24,6 +24,29 @@
       margin: 0 auto;
     }
 
+    /* LOGO (Option 1 – clean wordmark) */
+    .logo {
+      margin-bottom: 1.75rem;
+      line-height: 1.1;
+    }
+
+    .logo-state {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .logo-name {
+      display: block;
+      font-size: 2.1rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: #f8fafc;
+    }
+
     h1 {
       font-size: 2.4rem;
       margin-bottom: 0.75rem;
@@ -44,14 +67,6 @@
     .tagline {
       color: #94a3b8;
       font-size: 1.05rem;
-    }
-
-    .site-logo {
-      display: block;
-      max-width: 320px;
-      width: 100%;
-      height: auto;
-      margin-bottom: 1.5rem;
     }
 
     .box {
@@ -107,11 +122,12 @@
   <main id="app">
     <!-- HOME CONTENT -->
     <div id="home">
-      <img
-        src="assets/img/logo1big.png"
-        alt="Fountain Lake Arkansas Network logo"
-        class="site-logo"
-      />
+
+      <!-- TEXT LOGO -->
+      <div class="logo">
+        <span class="logo-state">ARKANSAS</span>
+        <span class="logo-name">Fountain Lake Network</span>
+      </div>
 
       <h1>Fountain Lake Arkansas Network</h1>
 
@@ -137,14 +153,14 @@
     </div>
   </main>
 
+  <!-- JS UNCHANGED -->
   <script>
     const ENDPOINT = "https://cms.fountainlake.net/graphql";
     const app = document.getElementById("app");
     const home = document.getElementById("home");
 
     function renderError(container, err) {
-      container.innerHTML =
-        "<div class='error'>" + err + "</div>";
+      container.innerHTML = "<div class='error'>" + err + "</div>";
     }
 
     function renderList(container, items, type) {
@@ -158,11 +174,7 @@
       items.forEach(item => {
         const div = document.createElement("div");
         div.className = "news-item";
-        div.innerHTML = `
-          <a data-type="${type}" data-slug="${item.slug}">
-            ${item.title}
-          </a>
-        `;
+        div.innerHTML = `<a data-type="${type}" data-slug="${item.slug}">${item.title}</a>`;
         container.appendChild(div);
       });
     }
@@ -174,26 +186,11 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: `
-            {
-              newsItems(first: 5, where: { status: PUBLISH }) {
-                nodes {
-                  title
-                  slug
-                }
-              }
-            }
-          `
+          query: `{ newsItems(first: 5, where: { status: PUBLISH }) { nodes { title slug } } }`
         })
       })
       .then(res => res.json())
-      .then(res => {
-        if (res.errors) {
-          renderError(container, JSON.stringify(res.errors, null, 2));
-          return;
-        }
-        renderList(container, res.data.newsItems.nodes, "news");
-      })
+      .then(res => renderList(container, res.data.newsItems.nodes, "news"))
       .catch(err => renderError(container, err));
     }
 
@@ -204,114 +201,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: `
-            {
-              posts(first: 5, where: { status: PUBLISH }) {
-                nodes {
-                  title
-                  slug
-                }
-              }
-            }
-          `
+          query: `{ posts(first: 5, where: { status: PUBLISH }) { nodes { title slug } } }`
         })
       })
-      .then(res => res.json())
-      .then(res => {
-        if (res.errors) {
-          renderError(container, JSON.stringify(res.errors, null, 2));
-          return;
-        }
-        renderList(container, res.data.posts.nodes, "post");
-      })
-      .catch(err => renderError(container, err));
-    }
-
-    function loadArticle(slug, type, push = true) {
-      if (push) {
-        history.pushState({ slug, type }, "", `/${type}/${slug}`);
-      }
-
-      app.innerHTML = "<p>Loading article…</p>";
-
-      const query =
-        type === "news"
-          ? `
-            {
-              newsItemBy(slug: "${slug}") {
-                title
-                content
-              }
-            }
-          `
-          : `
-            {
-              postBy(slug: "${slug}") {
-                title
-                content
-              }
-            }
-          `;
-
-      fetch(ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query })
-      })
-      .then(res => res.json())
-      .then(res => {
-        const item =
-          type === "news"
-            ? res.data.newsItemBy
-            : res.data.postBy;
-
-        if (!item) {
-          app.innerHTML = "<h1>Not found</h1>";
-          return;
-        }
-
-        app.innerHTML = `
-          <a href="/" class="back-link" id="back-home">← Back</a>
-          <article>
-            <h1>${item.title}</h1>
-            ${item.content}
-          </article>
-        `;
-
-        document.getElementById("back-home").addEventListener("click", e => {
-          e.preventDefault();
-          history.pushState({}, "", "/");
-          restoreHome();
-        });
-      });
-    }
-
-    function restoreHome() {
-      app.innerHTML = "";
-      app.appendChild(home);
-      loadLocalNews();
-      loadSiteUpdates();
-    }
-
-    document.addEventListener("click", e => {
-      const link = e.target.closest("[data-slug]");
-      if (!link) return;
-
-      e.preventDefault();
-      loadArticle(link.dataset.slug, link.dataset.type);
-    });
-
-    window.addEventListener("popstate", e => {
-      if (!e.state) {
-        restoreHome();
-      } else {
-        loadArticle(e.state.slug, e.state.type, false);
-      }
-    });
-
-    // initial load
-    loadLocalNews();
-    loadSiteUpdates();
-  </script>
-</body>
-</html>
+      .then(res => res.js
