@@ -110,18 +110,23 @@
     article {
       max-width: 720px;
     }
-    .masthead {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
+.site-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 1rem;
 }
 
-.site-logo {
-  max-width: 140px;
-  width: 100%;
-  height: auto;
-  flex-shrink: 0;
+.site-kicker {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 0.4rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
   </style>
@@ -131,15 +136,10 @@
   <main id="app">
     <!-- HOME CONTENT -->
     <div id="home">
- <div class="masthead">
-  <img
-    src="assets/img/logo1big.png"
-    alt="Fountain Lake Arkansas Network logo"
-    class="site-logo"
-  />
-  <h1>Fountain Lake Arkansas Network</h1>
-</div>
-
+<h1 class="site-title">
+  <span class="site-kicker">Arkansas</span>
+  Fountain Lake Network
+</h1>
       <p class="tagline">
         Local news, school updates, events, and business listings for Fountain Lake,
         Arkansas, including communities near Hot Springs National Park and Hot Springs Village.
