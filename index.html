@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Fountain Lake Arkansas Network | News, Schools & Local Businesses</title>
+  <title>Fountain Lake Arkansas Network | Local News & Updates</title>
 
-  <meta name="description" content="Fountain Lake Arkansas Network provides local news, school updates, events, and business listings for Fountain Lake, Arkansas, including areas near Hot Springs National Park and Hot Springs Village." />
-
+  <meta name="description" content="Local news, school updates, events, and business listings for Fountain Lake, Arkansas." />
   <meta name="robots" content="index, follow" />
 
   <style>
@@ -16,51 +15,81 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background: #0f172a;
       color: #e5e7eb;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       min-height: 100vh;
     }
+
     main {
-      max-width: 800px;
+      max-width: 820px;
       padding: 2.75rem;
+      margin: 0 auto;
     }
+
     h1 {
       font-size: 2.4rem;
       margin-bottom: 0.75rem;
       letter-spacing: -0.02em;
     }
+
+    h2 {
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+    }
+
     p {
       color: #cbd5f5;
       line-height: 1.65;
       margin-bottom: 1rem;
     }
+
     .tagline {
-      font-size: 1.05rem;
       color: #94a3b8;
+      font-size: 1.05rem;
     }
+
     .site-logo {
       display: block;
       max-width: 320px;
       width: 100%;
       height: auto;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
     }
+
     .box {
       background: #1e293b;
       padding: 1rem;
-      border-radius: 0.375rem;
-      margin-top: 1rem;
+      border-radius: 0.5rem;
     }
+
+    .news-item {
+      padding: 0.6rem 0;
+    }
+
+    .news-item a {
+      color: #a78bfa;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .news-item a:hover {
+      text-decoration: underline;
+    }
+
     .muted {
       color: #64748b;
     }
+
+    .error {
+      color: #fca5a5;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
+
 <body>
   <main>
     <img
-      src="/assets/img/logo1big.png"
+      src="assets/img/logo1big.png"
       alt="Fountain Lake Arkansas Network logo"
       class="site-logo"
     />
@@ -77,81 +106,78 @@
       residents and families in the Fountain Lake area.
     </p>
 
-<section>
-  <h2>Local News</h2>
-  <div class="box" id="local-news">Loading…</div>
-</section>
+    <!-- LOCAL NEWS -->
+    <section>
+      <h2>Local News</h2>
+      <div class="box" id="local-news">Loading…</div>
+    </section>
 
-<section>
-  <h2>Site Updates</h2>
-  <div class="box" id="site-news">Loading…</div>
-</section>
-<script>
-const pathParts = window.location.pathname
-  .split("/")
-  .filter(Boolean);
+    <!-- SITE UPDATES -->
+    <section>
+      <h2>Site Updates</h2>
+      <div class="box" id="site-updates">Loading…</div>
+    </section>
+  </main>
 
-const isNewsPage = pathParts[0] === "news";
-const slug = pathParts[1];
+  <script>
+    const ENDPOINT = "https://cms.fountainlake.net/graphql";
 
-if (isNewsPage && slug) {
-  loadNewsArticle(slug);
-} else {
-  loadHome();
-}
+    function loadNews(targetId, categorySlug) {
+      const container = document.getElementById(targetId);
 
-function loadHome() {
-  // Do nothing – homepage HTML already exists
-}
-
-function loadNewsArticle(slug) {
-  const main = document.querySelector("main");
-
-  main.innerHTML = "<p>Loading article…</p>";
-
-  fetch("https://cms.fountainlake.net/graphql", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: `
-        query GetNewsItem {
-          newsItems(where: { name: "${slug}" }) {
-            nodes {
-              title
-              content
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            {
+              newsItems(first: 5, where: { categoryName: "${categorySlug}" }) {
+                nodes {
+                  title
+                  slug
+                  status
+                }
+              }
             }
-          }
+          `
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.errors) {
+          container.innerHTML =
+            "<div class='error'>" + JSON.stringify(res.errors, null, 2) + "</div>";
+          return;
         }
-      `
-    })
-  })
-  .then(res => res.json())
-  .then(res => {
-    const item = res?.data?.newsItems?.nodes?.[0];
 
-    if (!item) {
-      main.innerHTML = "<h1>Article not found</h1>";
-      return;
+        const items = res.data.newsItems.nodes;
+
+        if (!items.length) {
+          container.innerHTML =
+            "<p class='muted'>No recent items.</p>";
+          return;
+        }
+
+        container.innerHTML = "";
+
+        items.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "news-item";
+          div.innerHTML = `
+            <a href="/news/${item.slug}/">${item.title}</a>
+          `;
+          container.appendChild(div);
+        });
+      })
+      .catch(err => {
+        container.innerHTML =
+          "<div class='error'>Fetch error:\n" + err + "</div>";
+      });
     }
 
-    main.innerHTML = `
-      <article style="max-width: 720px;">
-        <h1>${item.title}</h1>
-        <div>${item.content}</div>
-      </article>
-    `;
-  })
-  .catch(err => {
-    main.innerHTML = `
-      <h1>Error loading article</h1>
-      <pre>${err}</pre>
-    `;
-  });
-}
-</script>
-
-
-
-  </main>
+    // Load homepage sections
+    loadNews("local-news", "local");
+    loadNews("site-updates", "site-updates");
+  </script>
 </body>
 </html>
