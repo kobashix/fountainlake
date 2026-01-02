@@ -62,9 +62,57 @@
       to both the city of Hot Springs and surrounding Garland County communities.
     </p>
 
-    <p class="note">
-      Site launching soon.
-    </p>
+<section>
+  <h2>Local News</h2>
+  <div class="box" id="news">
+    Loading local news…
+  </div>
+</section>
+
+<script>
+  fetch("https://cms.fountainlake.net/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      query: `
+        {
+          newsAndAlerts(first: 3) {
+            nodes {
+              title
+              date
+            }
+          }
+        }
+      `
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const container = document.getElementById("news");
+    container.innerHTML = "";
+
+    const items = data?.data?.newsAndAlerts?.nodes || [];
+
+    if (items.length === 0) {
+      container.innerHTML = "<p class='muted'>No recent news available.</p>";
+      return;
+    }
+
+    items.forEach(item => {
+      const el = document.createElement("div");
+      el.style.marginBottom = "0.75rem";
+      el.innerHTML = "<strong>" + item.title + "</strong>";
+      container.appendChild(el);
+    });
+  })
+  .catch(() => {
+    document.getElementById("news").innerText =
+      "Unable to load news at this time.";
+  });
+</script>
+
   </main>
 </body>
 </html>
