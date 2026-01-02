@@ -131,7 +131,7 @@
         body: JSON.stringify({
           query: `
             {
-              newsItems(first: 5, where: { categoryName: "${categorySlug}" }) {
+              newsItems(first: 5, where: {status: PUBLISH}, orderBy: {field: DATE, order: DESC}) {
                 nodes {
                   title
                   slug
