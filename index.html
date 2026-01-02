@@ -98,15 +98,15 @@
     },
     body: JSON.stringify({
       query: `
-        {
-          newsAndAlerts(first: 3) {
-            nodes {
-              title
-              date
-            }
-          }
-        }
-      `
+{
+  NewsItems(first: 3) {
+    nodes {
+      title
+      date
+    }
+  }
+}
+`
     })
   })
   .then(res => res.json())
