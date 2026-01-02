@@ -68,6 +68,7 @@
       color: #a78bfa;
       text-decoration: none;
       font-weight: 600;
+      cursor: pointer;
     }
 
     .news-item a:hover {
@@ -83,46 +84,56 @@
       font-size: 0.9rem;
       white-space: pre-wrap;
     }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      color: #a78bfa;
+      text-decoration: none;
+      font-weight: 600;
+    }
   </style>
 </head>
 
 <body>
-  <main>
-    <img
-      src="assets/img/logo1big.png"
-      alt="Fountain Lake Arkansas Network logo"
-      class="site-logo"
-    />
-
-    <h1>Fountain Lake Arkansas Network</h1>
-
-    <p class="tagline">
-      Local news, school updates, events, and business listings for Fountain Lake,
-      Arkansas, including communities near Hot Springs National Park and Hot Springs Village.
-    </p>
-
-    <p>
-      The Fountain Lake Arkansas Network is a community-focused information hub serving
-      residents and families in the Fountain Lake area.
-    </p>
-
-    <!-- LOCAL NEWS -->
-    <section>
-      <h2>Local News</h2>
-      <div class="box" id="local-news">Loading…</div>
-    </section>
-
-    <!-- SITE UPDATES -->
-    <section>
-      <h2>Site Updates</h2>
-      <div class="box" id="site-updates">Loading…</div>
-    </section>
-  </main>
+  <main id="app"></main>
 
   <script>
     const ENDPOINT = "https://cms.fountainlake.net/graphql";
+    const app = document.getElementById("app");
 
-    function loadNews(targetId, categorySlug) {
+    function renderHome() {
+      app.innerHTML = `
+        <img src="assets/img/logo1big.png" alt="Fountain Lake Arkansas Network logo" class="site-logo" />
+
+        <h1>Fountain Lake Arkansas Network</h1>
+
+        <p class="tagline">
+          Local news, school updates, events, and business listings for Fountain Lake,
+          Arkansas, including communities near Hot Springs National Park and Hot Springs Village.
+        </p>
+
+        <p>
+          The Fountain Lake Arkansas Network is a community-focused information hub serving
+          residents and families in the Fountain Lake area.
+        </p>
+
+        <section>
+          <h2>Local News</h2>
+          <div class="box" id="local-news">Loading…</div>
+        </section>
+
+        <section>
+          <h2>Site Updates</h2>
+          <div class="box" id="site-updates">Loading…</div>
+        </section>
+      `;
+
+      loadNewsList("local-news");
+      loadNewsList("site-updates");
+    }
+
+    function loadNewsList(targetId) {
       const container = document.getElementById(targetId);
 
       fetch(ENDPOINT, {
@@ -131,11 +142,10 @@
         body: JSON.stringify({
           query: `
             {
-              newsItems(first: 5, where: {status: PUBLISH}) {
+              newsItems(first: 5, where: { status: PUBLISH }) {
                 nodes {
                   title
                   slug
-                  status
                 }
               }
             }
@@ -145,39 +155,95 @@
       .then(res => res.json())
       .then(res => {
         if (res.errors) {
-          container.innerHTML =
-            "<div class='error'>" + JSON.stringify(res.errors, null, 2) + "</div>";
-          return;
-        }
-
-        const items = res.data.newsItems.nodes;
-
-        if (!items.length) {
-          container.innerHTML =
-            "<p class='muted'>No recent items.</p>";
+          container.innerHTML = "<div class='error'>" + JSON.stringify(res.errors, null, 2) + "</div>";
           return;
         }
 
         container.innerHTML = "";
 
-        items.forEach(item => {
+        res.data.newsItems.nodes.forEach(item => {
           const div = document.createElement("div");
           div.className = "news-item";
           div.innerHTML = `
-            <a href="/news/${item.slug}/">${item.title}</a>
+            <a data-slug="${item.slug}">${item.title}</a>
           `;
           container.appendChild(div);
         });
       })
       .catch(err => {
-        container.innerHTML =
-          "<div class='error'>Fetch error:\n" + err + "</div>";
+        container.innerHTML = "<div class='error'>" + err + "</div>";
       });
     }
 
-    // Load homepage sections
-    loadNews("local-news", "local");
-    loadNews("site-updates", "site-updates");
+    function loadArticle(slug, push = true) {
+      if (push) history.pushState({ slug }, "", "/news/" + slug);
+
+      app.innerHTML = "<p>Loading article…</p>";
+
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            {
+              newsItemBy(slug: "${slug}") {
+                title
+                content
+              }
+            }
+          `
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        const item = res.data.newsItemBy;
+
+        if (!item) {
+          app.innerHTML = "<h1>Article not found</h1>";
+          return;
+        }
+
+        app.innerHTML = `
+          <a href="/" class="back-link" id="back-home">← Back</a>
+          <article>
+            <h1>${item.title}</h1>
+            ${item.content}
+          </article>
+        `;
+      });
+    }
+
+    document.addEventListener("click", e => {
+      const link = e.target.closest("[data-slug]");
+      if (!link) return;
+
+      e.preventDefault();
+      loadArticle(link.dataset.slug);
+    });
+
+    document.addEventListener("click", e => {
+      if (e.target.id === "back-home") {
+        e.preventDefault();
+        history.pushState({}, "", "/");
+        renderHome();
+      }
+    });
+
+    window.addEventListener("popstate", e => {
+      if (e.state && e.state.slug) {
+        loadArticle(e.state.slug, false);
+      } else {
+        renderHome();
+      }
+    });
+
+    // Initial load
+    if (location.pathname.startsWith("/news/")) {
+      const slug = location.pathname.split("/").filter(Boolean)[1];
+      loadArticle(slug, false);
+    } else {
+      renderHome();
+    }
   </script>
 </body>
 </html>
