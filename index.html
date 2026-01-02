@@ -118,7 +118,7 @@ function loadNews(endpoint, query, containerId) {
       const div = document.createElement("div");
       div.style.marginBottom = "0.75rem";
       div.innerHTML =
-        `<a href="/news${item.uri}">
+        `<a href="${item.uri}">
           <strong>${item.title}</strong>
         </a>`;
       el.appendChild(div);
