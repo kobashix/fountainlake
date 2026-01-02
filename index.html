@@ -110,6 +110,20 @@
     article {
       max-width: 720px;
     }
+    .masthead {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.site-logo {
+  max-width: 140px;
+  width: 100%;
+  height: auto;
+  flex-shrink: 0;
+}
+
   </style>
 </head>
 
@@ -117,13 +131,14 @@
   <main id="app">
     <!-- HOME CONTENT -->
     <div id="home">
-      <img
-        src="assets/img/logo1big.png"
-        alt="Fountain Lake Arkansas Network logo"
-        class="site-logo"
-      />
-
-      <h1>Fountain Lake Arkansas Network</h1>
+ <div class="masthead">
+  <img
+    src="assets/img/logo1big.png"
+    alt="Fountain Lake Arkansas Network logo"
+    class="site-logo"
+  />
+  <h1>Fountain Lake Arkansas Network</h1>
+</div>
 
       <p class="tagline">
         Local news, school updates, events, and business listings for Fountain Lake,
