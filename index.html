@@ -87,22 +87,27 @@
   <div class="box" id="site-news">Loading…</div>
 </section>
 <script>
-const path = window.location.pathname;
+const pathParts = window.location.pathname
+  .split("/")
+  .filter(Boolean);
 
-if (path.startsWith("/news/")) {
-  loadNewsArticle(path.split("/").pop());
+const isNewsPage = pathParts[0] === "news";
+const slug = pathParts[1];
+
+if (isNewsPage && slug) {
+  loadNewsArticle(slug);
 } else {
   loadHome();
 }
 
 function loadHome() {
-  document.getElementById("news").style.display = "block";
+  // Do nothing – homepage HTML already exists
 }
 
 function loadNewsArticle(slug) {
-  document.querySelector("main").innerHTML = `
-    <h1>Loading article…</h1>
-  `;
+  const main = document.querySelector("main");
+
+  main.innerHTML = "<p>Loading article…</p>";
 
   fetch("https://cms.fountainlake.net/graphql", {
     method: "POST",
@@ -121,26 +126,30 @@ function loadNewsArticle(slug) {
     })
   })
   .then(res => res.json())
-  .then(({ data }) => {
-    const item = data.newsItems.nodes[0];
+  .then(res => {
+    const item = res?.data?.newsItems?.nodes?.[0];
+
     if (!item) {
-      document.querySelector("main").innerHTML = "<h1>Article not found</h1>";
+      main.innerHTML = "<h1>Article not found</h1>";
       return;
     }
 
-    document.querySelector("main").innerHTML = `
-      <article>
+    main.innerHTML = `
+      <article style="max-width: 720px;">
         <h1>${item.title}</h1>
-        ${item.content}
+        <div>${item.content}</div>
       </article>
     `;
   })
   .catch(err => {
-    document.querySelector("main").innerHTML =
-      "<h1>Error loading article</h1><pre>" + err + "</pre>";
+    main.innerHTML = `
+      <h1>Error loading article</h1>
+      <pre>${err}</pre>
+    `;
   });
 }
 </script>
+
 
 
   </main>
