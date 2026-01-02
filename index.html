@@ -77,55 +77,82 @@
       residents and families in the Fountain Lake area.
     </p>
 
-    <section>
-      <h2>Local News</h2>
-      <div class="box" id="news">
-        Loading local news…
-      </div>
-    </section>
+<section>
+  <h2>Local News</h2>
+  <div class="box" id="local-news">Loading…</div>
+</section>
 
-    <script>
-      fetch("https://cms.fountainlake.net/graphql", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          query: `
-          query GetLatestNews {
-            newsItems(first: 5, where: { status: PUBLISH }) {
-              nodes {
-                title
-              }
-            }
-          }
-          `
-        })
-      })
-      .then(res => res.json())
-      .then(({ data }) => {
-        const container = document.getElementById("news");
-        container.innerHTML = "";
+<section>
+  <h2>Site Updates</h2>
+  <div class="box" id="site-news">Loading…</div>
+</section>
+<script>
+function loadNews(endpoint, query, containerId) {
+  fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query })
+  })
+  .then(res => res.json())
+  .then(({ data, errors }) => {
+    const el = document.getElementById(containerId);
+    el.innerHTML = "";
 
-        const items = data?.newsItems?.nodes || [];
+    if (errors) {
+      el.innerHTML = "<p class='muted'>Error loading content.</p>";
+      console.error(errors);
+      return;
+    }
 
-        if (items.length === 0) {
-          container.innerHTML = "<p class='muted'>No recent news available.</p>";
-          return;
-        }
+    const items =
+      data.newsItems?.nodes ||
+      data.posts?.nodes ||
+      [];
 
-        items.forEach(item => {
-          const el = document.createElement("div");
-          el.style.marginBottom = "0.75rem";
-          el.innerHTML = "<strong>" + item.title + "</strong>";
-          container.appendChild(el);
-        });
-      })
-      .catch(() => {
-        document.getElementById("news").innerText =
-          "Unable to load news at this time.";
-      });
-    </script>
+    if (!items.length) {
+      el.innerHTML = "<p class='muted'>Nothing yet.</p>";
+      return;
+    }
+
+    items.forEach(item => {
+      const div = document.createElement("div");
+      div.style.marginBottom = "0.75rem";
+      div.innerHTML =
+        `<a href="https://cms.fountainlake.net${item.uri}">
+          <strong>${item.title}</strong>
+        </a>`;
+      el.appendChild(div);
+    });
+  });
+}
+
+// Local News
+loadNews(
+  "https://cms.fountainlake.net/graphql",
+  `
+  query {
+    newsItems(first: 5, where: { status: PUBLISH }) {
+      nodes { title uri }
+    }
+  }
+  `,
+  "local-news"
+);
+
+// Site Updates
+loadNews(
+  "https://cms.fountainlake.net/graphql",
+  `
+  query {
+    posts(first: 3, where: { status: PUBLISH }) {
+      nodes { title uri }
+    }
+  }
+  `,
+  "site-news"
+);
+</script>
+
   </main>
 </body>
 </html>
