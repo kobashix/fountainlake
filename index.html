@@ -92,49 +92,83 @@
       text-decoration: none;
       font-weight: 600;
     }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    article {
+      max-width: 720px;
+    }
   </style>
 </head>
 
 <body>
-  <main id="app"></main>
+  <main id="app">
+    <!-- HOME CONTENT -->
+    <div id="home">
+      <img
+        src="assets/img/logo1big.png"
+        alt="Fountain Lake Arkansas Network logo"
+        class="site-logo"
+      />
+
+      <h1>Fountain Lake Arkansas Network</h1>
+
+      <p class="tagline">
+        Local news, school updates, events, and business listings for Fountain Lake,
+        Arkansas, including communities near Hot Springs National Park and Hot Springs Village.
+      </p>
+
+      <p>
+        The Fountain Lake Arkansas Network is a community-focused information hub serving
+        residents and families in the Fountain Lake area.
+      </p>
+
+      <section>
+        <h2>Local News</h2>
+        <div class="box" id="local-news">Loading…</div>
+      </section>
+
+      <section>
+        <h2>Site Updates</h2>
+        <div class="box" id="site-updates">Loading…</div>
+      </section>
+    </div>
+  </main>
 
   <script>
     const ENDPOINT = "https://cms.fountainlake.net/graphql";
     const app = document.getElementById("app");
+    const home = document.getElementById("home");
 
-    function renderHome() {
-      app.innerHTML = `
-        <img src="assets/img/logo1big.png" alt="Fountain Lake Arkansas Network logo" class="site-logo" />
-
-        <h1>Fountain Lake Arkansas Network</h1>
-
-        <p class="tagline">
-          Local news, school updates, events, and business listings for Fountain Lake,
-          Arkansas, including communities near Hot Springs National Park and Hot Springs Village.
-        </p>
-
-        <p>
-          The Fountain Lake Arkansas Network is a community-focused information hub serving
-          residents and families in the Fountain Lake area.
-        </p>
-
-        <section>
-          <h2>Local News</h2>
-          <div class="box" id="local-news">Loading…</div>
-        </section>
-
-        <section>
-          <h2>Site Updates</h2>
-          <div class="box" id="site-updates">Loading…</div>
-        </section>
-      `;
-
-      loadNewsList("local-news");
-      loadNewsList("site-updates");
+    function renderError(container, err) {
+      container.innerHTML =
+        "<div class='error'>" + err + "</div>";
     }
 
-    function loadNewsList(targetId) {
-      const container = document.getElementById(targetId);
+    function renderList(container, items, type) {
+      if (!items.length) {
+        container.innerHTML = "<p class='muted'>No items.</p>";
+        return;
+      }
+
+      container.innerHTML = "";
+
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "news-item";
+        div.innerHTML = `
+          <a data-type="${type}" data-slug="${item.slug}">
+            ${item.title}
+          </a>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function loadLocalNews() {
+      const container = document.getElementById("local-news");
 
       fetch(ENDPOINT, {
         method: "POST",
@@ -155,30 +189,16 @@
       .then(res => res.json())
       .then(res => {
         if (res.errors) {
-          container.innerHTML = "<div class='error'>" + JSON.stringify(res.errors, null, 2) + "</div>";
+          renderError(container, JSON.stringify(res.errors, null, 2));
           return;
         }
-
-        container.innerHTML = "";
-
-        res.data.newsItems.nodes.forEach(item => {
-          const div = document.createElement("div");
-          div.className = "news-item";
-          div.innerHTML = `
-            <a data-slug="${item.slug}">${item.title}</a>
-          `;
-          container.appendChild(div);
-        });
+        renderList(container, res.data.newsItems.nodes, "news");
       })
-      .catch(err => {
-        container.innerHTML = "<div class='error'>" + err + "</div>";
-      });
+      .catch(err => renderError(container, err));
     }
 
-    function loadArticle(slug, push = true) {
-      if (push) history.pushState({ slug }, "", "/news/" + slug);
-
-      app.innerHTML = "<p>Loading article…</p>";
+    function loadSiteUpdates() {
+      const container = document.getElementById("site-updates");
 
       fetch(ENDPOINT, {
         method: "POST",
@@ -186,9 +206,11 @@
         body: JSON.stringify({
           query: `
             {
-              newsItemBy(slug: "${slug}") {
-                title
-                content
+              posts(first: 5, where: { status: PUBLISH }) {
+                nodes {
+                  title
+                  slug
+                }
               }
             }
           `
@@ -196,10 +218,55 @@
       })
       .then(res => res.json())
       .then(res => {
-        const item = res.data.newsItemBy;
+        if (res.errors) {
+          renderError(container, JSON.stringify(res.errors, null, 2));
+          return;
+        }
+        renderList(container, res.data.posts.nodes, "post");
+      })
+      .catch(err => renderError(container, err));
+    }
+
+    function loadArticle(slug, type, push = true) {
+      if (push) {
+        history.pushState({ slug, type }, "", `/${type}/${slug}`);
+      }
+
+      app.innerHTML = "<p>Loading article…</p>";
+
+      const query =
+        type === "news"
+          ? `
+            {
+              newsItemBy(slug: "${slug}") {
+                title
+                content
+              }
+            }
+          `
+          : `
+            {
+              postBy(slug: "${slug}") {
+                title
+                content
+              }
+            }
+          `;
+
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      })
+      .then(res => res.json())
+      .then(res => {
+        const item =
+          type === "news"
+            ? res.data.newsItemBy
+            : res.data.postBy;
 
         if (!item) {
-          app.innerHTML = "<h1>Article not found</h1>";
+          app.innerHTML = "<h1>Not found</h1>";
           return;
         }
 
@@ -210,7 +277,20 @@
             ${item.content}
           </article>
         `;
+
+        document.getElementById("back-home").addEventListener("click", e => {
+          e.preventDefault();
+          history.pushState({}, "", "/");
+          restoreHome();
+        });
       });
+    }
+
+    function restoreHome() {
+      app.innerHTML = "";
+      app.appendChild(home);
+      loadLocalNews();
+      loadSiteUpdates();
     }
 
     document.addEventListener("click", e => {
@@ -218,32 +298,20 @@
       if (!link) return;
 
       e.preventDefault();
-      loadArticle(link.dataset.slug);
-    });
-
-    document.addEventListener("click", e => {
-      if (e.target.id === "back-home") {
-        e.preventDefault();
-        history.pushState({}, "", "/");
-        renderHome();
-      }
+      loadArticle(link.dataset.slug, link.dataset.type);
     });
 
     window.addEventListener("popstate", e => {
-      if (e.state && e.state.slug) {
-        loadArticle(e.state.slug, false);
+      if (!e.state) {
+        restoreHome();
       } else {
-        renderHome();
+        loadArticle(e.state.slug, e.state.type, false);
       }
     });
 
-    // Initial load
-    if (location.pathname.startsWith("/news/")) {
-      const slug = location.pathname.split("/").filter(Boolean)[1];
-      loadArticle(slug, false);
-    } else {
-      renderHome();
-    }
+    // initial load
+    loadLocalNews();
+    loadSiteUpdates();
   </script>
 </body>
 </html>
