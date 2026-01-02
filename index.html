@@ -39,18 +39,13 @@
       font-size: 1.05rem;
       color: #94a3b8;
     }
-    .note {
-      margin-top: 2.5rem;
-      font-size: 0.9rem;
-      opacity: 0.75;
-    }
     .site-logo {
-  display: block;
-  max-width: 320px;
-  width: 100%;
-  height: auto;
-  margin-bottom: 1.25rem;
-}
+      display: block;
+      max-width: 320px;
+      width: 100%;
+      height: auto;
+      margin-bottom: 1.25rem;
+    }
     .box {
       background: #1e293b;
       padding: 1rem;
@@ -64,11 +59,12 @@
 </head>
 <body>
   <main>
-      <img
-    src="assets/img/logo1big.png"
-    alt="Fountain Lake Arkansas Network logo"
-    class="site-logo"
-  />
+    <img
+      src="assets/img/logo1big.png"
+      alt="Fountain Lake Arkansas Network logo"
+      class="site-logo"
+    />
+
     <h1>Fountain Lake Arkansas Network</h1>
 
     <p class="tagline">
@@ -78,62 +74,58 @@
 
     <p>
       The Fountain Lake Arkansas Network is a community-focused information hub serving
-      residents and families in the Fountain Lake area. The community lies between
-      Hot Springs National Park and Hot Springs Village, making it uniquely connected
-      to both the city of Hot Springs and surrounding Garland County communities.
+      residents and families in the Fountain Lake area.
     </p>
 
-<section>
-  <h2>Local News</h2>
-  <div class="box" id="news">
-    Loading local news…
-  </div>
-</section>
+    <section>
+      <h2>Local News</h2>
+      <div class="box" id="news">
+        Loading local news…
+      </div>
+    </section>
 
-<script>
-  fetch("https://cms.fountainlake.net/graphql", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      query: `
-{
-  newsItems(first: 5) {
-    nodes {
-      title
-      status
-    }
-  }
-}
-`
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    const container = document.getElementById("news");
-    container.innerHTML = "";
+    <script>
+      fetch("https://cms.fountainlake.net/graphql", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          query: `
+          query GetLatestNews {
+            newsItems(first: 5, where: { status: PUBLISH }) {
+              nodes {
+                title
+              }
+            }
+          }
+          `
+        })
+      })
+      .then(res => res.json())
+      .then(({ data }) => {
+        const container = document.getElementById("news");
+        container.innerHTML = "";
 
-    const items = data?.data?.newsAndAlerts?.nodes || [];
+        const items = data?.newsItems?.nodes || [];
 
-    if (items.length === 0) {
-      container.innerHTML = "<p class='muted'>No recent news available.</p>";
-      return;
-    }
+        if (items.length === 0) {
+          container.innerHTML = "<p class='muted'>No recent news available.</p>";
+          return;
+        }
 
-    items.forEach(item => {
-      const el = document.createElement("div");
-      el.style.marginBottom = "0.75rem";
-      el.innerHTML = "<strong>" + item.title + "</strong>";
-      container.appendChild(el);
-    });
-  })
-  .catch(() => {
-    document.getElementById("news").innerText =
-      "Unable to load news at this time.";
-  });
-</script>
-
+        items.forEach(item => {
+          const el = document.createElement("div");
+          el.style.marginBottom = "0.75rem";
+          el.innerHTML = "<strong>" + item.title + "</strong>";
+          container.appendChild(el);
+        });
+      })
+      .catch(() => {
+        document.getElementById("news").innerText =
+          "Unable to load news at this time.";
+      });
+    </script>
   </main>
 </body>
 </html>
