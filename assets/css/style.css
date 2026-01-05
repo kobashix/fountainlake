@@ -111,6 +111,7 @@
   margin-bottom: 0.4rem;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
+.site-nav,
 .main-nav {
   display: flex;
   gap: 1.75rem;
@@ -120,6 +121,7 @@
   flex-wrap: wrap;
 }
 
+.site-nav a,
 .main-nav a {
   font-size: 0.95rem;
   font-weight: 600;
@@ -128,7 +130,14 @@
   letter-spacing: 0.02em;
 }
 
+.site-nav a:hover,
 .main-nav a:hover {
+  color: #a78bfa;
+  text-decoration: underline;
+}
+
+.site-nav a.active,
+.main-nav a.active {
   color: #a78bfa;
   text-decoration: underline;
 }
