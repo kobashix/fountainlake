@@ -93,6 +93,143 @@
     article {
       max-width: 720px;
     }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: #111827;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.card h4 {
+  margin: 0.35rem 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.card p {
+  margin: 0 0 0.5rem;
+}
+
+.card-meta {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-links {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+}
+
+.card-links a {
+  color: #a78bfa;
+  text-decoration: none;
+}
+
+.card-links a:hover {
+  text-decoration: underline;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field-inline {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.field span {
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+input,
+textarea {
+  background: #0b1220;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #e5e7eb;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid #a78bfa;
+  outline-offset: 1px;
+}
+
+textarea {
+  min-height: 140px;
+}
+
+.btn {
+  background: linear-gradient(120deg, #a78bfa, #6366f1);
+  border: none;
+  color: white;
+  padding: 0.7rem 1.1rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn:hover {
+  filter: brightness(1.05);
+}
+
+.btn:active {
+  filter: brightness(0.95);
+}
+
+.btn-secondary {
+  background: #1f2937;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #e5e7eb;
+}
+
+.btn-danger {
+  background: #ef4444;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.small {
+  font-size: 0.9rem;
+}
 .site-title {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 3rem;
