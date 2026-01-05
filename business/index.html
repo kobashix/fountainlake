@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Business | Fountain Lake Network</title>
+
+  <meta name="description" content="Local business listings and highlights for Fountain Lake, Arkansas." />
+  <meta name="robots" content="index, follow" />
+
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+
+<body>
+  <main>
+    <header class="site-header">
+      <div class="kicker">Arkansas</div>
+      <h1 class="site-title">Fountain Lake Network</h1>
+
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/news/">News</a>
+        <a href="/school/">School</a>
+        <a href="/events/">Events</a>
+        <a href="/business/" class="active">Business</a>
+        <a href="/about.html">About</a>
+      </nav>
+    </header>
+
+    <article class="content">
+      <h2>Business listings</h2>
+      <p>Find and share local businesses serving Fountain Lake and nearby communities.</p>
+
+      <section>
+        <div class="section-header">
+          <h3>Approved listings</h3>
+          <p class="muted">Approved listings appear publicly after review.</p>
+        </div>
+        <div id="approved-list" class="card-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="stack">
+        <h3>Submit a business</h3>
+        <p class="muted">New submissions wait for approval before they show up here.</p>
+        <form id="business-form" class="card">
+          <label class="field">
+            <span>Business name *</span>
+            <input type="text" name="name" required maxlength="120" />
+          </label>
+          <label class="field">
+            <span>Category</span>
+            <input type="text" name="category" maxlength="80" placeholder="e.g., Dining, Services, Retail" />
+          </label>
+          <label class="field">
+            <span>Description *</span>
+            <textarea name="description" rows="3" required maxlength="400"></textarea>
+          </label>
+          <label class="field">
+            <span>Website</span>
+            <input type="url" name="website" placeholder="https://" />
+          </label>
+          <label class="field">
+            <span>Phone</span>
+            <input type="tel" name="phone" placeholder="555-555-5555" />
+          </label>
+          <button type="submit" class="btn">Submit for approval</button>
+          <p id="form-status" class="muted" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="stack admin-panel">
+        <div class="section-header">
+          <h3>Reviewer queue</h3>
+          <p class="muted">Enter the review code to approve or reject submissions.</p>
+        </div>
+
+        <div class="card" id="review-access">
+          <label class="field-inline">
+            <span>Review code</span>
+            <input type="password" id="review-code" placeholder="Enter review code" />
+          </label>
+          <button id="enable-review" class="btn btn-secondary">Unlock queue</button>
+          <p class="muted small">Client-side only: use a unique code when sharing this page.</p>
+          <p id="review-status" class="muted" aria-live="polite"></p>
+        </div>
+
+        <div class="card" id="pending-panel" hidden>
+          <div class="section-header">
+            <h4>Pending submissions</h4>
+            <p class="muted">Approve to publish or reject to remove.</p>
+          </div>
+          <div id="pending-list" class="card-grid" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <p class="back-link"><a href="/">← Back to Home</a></p>
+    </article>
+  </main>
+
+  <script>
+    const REVIEW_CODE = "fountainlake-approve";
+    const STORAGE_APPROVED = "fln_businesses_approved";
+    const STORAGE_PENDING = "fln_businesses_pending";
+
+    const approvedListEl = document.getElementById("approved-list");
+    const pendingPanel = document.getElementById("pending-panel");
+    const pendingListEl = document.getElementById("pending-list");
+    const form = document.getElementById("business-form");
+    const formStatus = document.getElementById("form-status");
+    const reviewStatus = document.getElementById("review-status");
+    const enableReviewBtn = document.getElementById("enable-review");
+
+    const fallbackApproved = [
+      {
+        name: "Fountain Lake Diner",
+        category: "Dining",
+        description: "Family-friendly diner serving breakfast, burgers, and homemade pies.",
+        website: "",
+        phone: "(501) 555-1234"
+      },
+      {
+        name: "Lake Country Hardware",
+        category: "Retail",
+        description: "Tools, paint, and weekend project supplies with local know-how.",
+        website: "",
+        phone: "(501) 555-9876"
+      }
+    ];
+
+    function readStore(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (err) {
+        console.warn("Unable to read storage", err);
+        return fallback;
+      }
+    }
+
+    function writeStore(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (err) {
+        console.warn("Unable to write storage", err);
+      }
+    }
+
+    function renderBusinesses(container, items, emptyMessage) {
+      container.innerHTML = "";
+
+      if (!items.length) {
+        container.innerHTML = `<p class="muted">${emptyMessage}</p>`;
+        return;
+      }
+
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <div class="card-meta">${item.category || "Local"}</div>
+          <h4>${item.name}</h4>
+          <p>${item.description}</p>
+          <div class="card-links">
+            ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener">Website</a>` : ""}
+            ${item.phone ? `<span>${item.phone}</span>` : ""}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderPending(items) {
+      pendingListEl.innerHTML = "";
+
+      if (!items.length) {
+        pendingListEl.innerHTML = `<p class="muted">No pending submissions.</p>`;
+        return;
+      }
+
+      items.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <div class="card-meta">${item.category || "Local"}</div>
+          <h4>${item.name}</h4>
+          <p>${item.description}</p>
+          <div class="card-links">
+            ${item.website ? `<a href="${item.website}" target="_blank" rel="noopener">Website</a>` : ""}
+            ${item.phone ? `<span>${item.phone}</span>` : ""}
+          </div>
+          <div class="actions">
+            <button data-action="approve" data-index="${index}" class="btn">Approve</button>
+            <button data-action="reject" data-index="${index}" class="btn btn-danger">Reject</button>
+          </div>
+        `;
+        pendingListEl.appendChild(div);
+      });
+    }
+
+    function loadData() {
+      const approved = readStore(STORAGE_APPROVED, fallbackApproved);
+      const pending = readStore(STORAGE_PENDING, []);
+      renderBusinesses(approvedListEl, approved, "No approved businesses yet. Submit one below.");
+      renderPending(pending);
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      const submission = {
+        name: formData.get("name").trim(),
+        category: formData.get("category").trim(),
+        description: formData.get("description").trim(),
+        website: formData.get("website").trim(),
+        phone: formData.get("phone").trim()
+      };
+
+      if (!submission.name || !submission.description) {
+        formStatus.textContent = "Name and description are required.";
+        return;
+      }
+
+      const pending = readStore(STORAGE_PENDING, []);
+      pending.push(submission);
+      writeStore(STORAGE_PENDING, pending);
+
+      form.reset();
+      formStatus.textContent = "Submitted! It will appear once approved.";
+      renderPending(pending);
+    });
+
+    enableReviewBtn.addEventListener("click", () => {
+      const code = document.getElementById("review-code").value.trim();
+      if (code !== REVIEW_CODE) {
+        reviewStatus.textContent = "Incorrect code.";
+        return;
+      }
+
+      pendingPanel.hidden = false;
+      reviewStatus.textContent = "Review mode unlocked.";
+    });
+
+    pendingListEl.addEventListener("click", e => {
+      const actionBtn = e.target.closest("button[data-action]");
+      if (!actionBtn) return;
+
+      const action = actionBtn.dataset.action;
+      const idx = Number(actionBtn.dataset.index);
+
+      const pending = readStore(STORAGE_PENDING, []);
+      const approved = readStore(STORAGE_APPROVED, fallbackApproved);
+
+      const [item] = pending.splice(idx, 1);
+      if (!item) return;
+
+      if (action === "approve") {
+        approved.unshift(item);
+        writeStore(STORAGE_APPROVED, approved);
+        renderBusinesses(approvedListEl, approved, "No approved businesses yet. Submit one below.");
+      }
+
+      writeStore(STORAGE_PENDING, pending);
+      renderPending(pending);
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
