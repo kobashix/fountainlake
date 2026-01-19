@@ -75,7 +75,7 @@
         const div = document.createElement("div");
         div.className = "news-item";
         div.innerHTML = `
-          <a data-type="${type}" data-slug="${item.slug}">
+          <a href="/${type}/${item.slug}" data-type="${type}" data-slug="${item.slug}">
             ${item.title}
           </a>
         `;
@@ -225,9 +225,20 @@
       }
     });
 
+    function hydrateFromPath() {
+      const match = window.location.pathname.match(/^\/(news|post)\/([^/]+)\/?$/);
+
+      if (match) {
+        const [, type, slug] = match;
+        loadArticle(slug, type, false);
+      } else {
+        loadLocalNews();
+        loadSiteUpdates();
+      }
+    }
+
     // initial load
-    loadLocalNews();
-    loadSiteUpdates();
+    hydrateFromPath();
   </script>
 </body>
 </html>
