@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Submit a Business | Fountain Lake Network</title>
+
+  <meta name="description" content="Submit a local business for inclusion in the Fountain Lake Network directory." />
+  <meta name="robots" content="index, follow" />
+
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+
+<body>
+  <main>
+    <!-- HEADER -->
+    <header class="site-header">
+      <div class="kicker">Arkansas</div>
+      <h1 class="site-title">Fountain Lake Network</h1>
+
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/news/">News</a>
+        <a href="/school/">School</a>
+        <a href="/events/">Events</a>
+        <a href="/business/">Business</a>
+        <a href="/about.html">About</a>
+      </nav>
+    </header>
+
+    <!-- CONTENT -->
+    <article class="content">
+      <h2>Submit a Local Business</h2>
+
+      <p>
+        This directory exists for one reason:  
+        to give Fountain Lake residents a reliable list of businesses that actually serve the area.
+      </p>
+
+      <p>
+        No ads. No pay-to-play. Just accurate listings.
+      </p>
+
+      <h3>Who Should Submit</h3>
+      <ul>
+        <li>Brick-and-mortar businesses</li>
+        <li>Home-based businesses</li>
+        <li>Trades, contractors, and services</li>
+        <li>Food, retail, and professional services</li>
+      </ul>
+
+      <h3>Business Information</h3>
+
+      <form id="business-form" class="form">
+        <label>
+          Business Name *
+          <input type="text" name="title" required />
+        </label>
+
+        <label>
+          Category *
+          <select name="category" required>
+            <option value="">Select one</option>
+            <option>Dining</option>
+            <option>Retail</option>
+            <option>Services</option>
+            <option>Trades</option>
+            <option>Automotive</option>
+            <option>Health</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <label>
+          Business Description *
+          <textarea name="description" rows="4" required></textarea>
+        </label>
+
+        <label>
+          Website
+          <input type="url" name="website" placeholder="https://example.com" />
+        </label>
+
+        <label>
+          Phone
+          <input type="tel" name="phone" />
+        </label>
+
+        <h3>Location</h3>
+
+        <label>
+          Street Address *
+          <input type="text" name="streetAddress" required />
+        </label>
+
+        <label>
+          City
+          <input type="text" name="city" />
+        </label>
+
+        <label>
+          State
+          <input type="text" name="stateShort" value="AR" />
+        </label>
+
+        <label>
+          ZIP Code
+          <input type="text" name="postCode" />
+        </label>
+
+        <button type="submit">Submit Business</button>
+      </form>
+
+      <p class="muted">
+        Submissions are reviewed before publishing to keep the directory accurate.
+      </p>
+
+      <p class="back-link">
+        <a href="/business/">← Back to Business Directory</a>
+      </p>
+    </article>
+  </main>
+
+  <!-- Placeholder JS (we wire this next) -->
+  <script>
+    document.getElementById("business-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      alert("Submission received. Review pending.");
+    });
+  </script>
+</body>
+</html>

@@ -281,3 +281,75 @@ async function initMap() {
     });
   });
 }
+const GRAPHQL_ENDPOINT = "https://cms.fountainlake.net/graphql";
+
+async function loadBusinesses() {
+  const query = `
+    query {
+      businesses(first: 50, where: { status: PUBLISH }) {
+        nodes {
+          title
+          slug
+          businessFields {
+            category
+            description
+            website
+            phone
+            location {
+              city
+              stateShort
+              postCode
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const res = await fetch(GRAPHQL_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    });
+
+    const json = await res.json();
+    const businesses = json.data.businesses.nodes;
+
+    renderBusinesses(businesses);
+  } catch (err) {
+    document.getElementById("business-list").innerHTML =
+      "<p class='muted'>Failed to load businesses.</p>";
+    console.error(err);
+  }
+}
+
+function renderBusinesses(businesses) {
+  const container = document.getElementById("business-list");
+
+  if (!businesses.length) {
+    container.innerHTML = "<p class='muted'>No businesses found.</p>";
+    return;
+  }
+
+  container.innerHTML = businesses.map(biz => `
+    <article class="business-card">
+      <h3>${biz.title}</h3>
+
+      <p class="category">${biz.businessFields.category?.join(", ") || ""}</p>
+
+      <p>${biz.businessFields.description || ""}</p>
+
+      <p class="meta">
+        ${biz.businessFields.location?.city || ""} ${biz.businessFields.location?.stateShort || ""}
+      </p>
+
+      <div class="actions">
+        <a href="/business/${biz.slug}/">View Details</a>
+        ${biz.businessFields.website ? `<a href="${biz.businessFields.website}" target="_blank">Website</a>` : ""}
+      </div>
+    </article>
+  `).join("");
+}
+
+document.addEventListener("DOMContentLoaded", loadBusinesses);
