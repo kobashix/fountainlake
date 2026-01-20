@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <title>Submit Your Business | Fountain Lake Network</title>
+  <title>Submit a Business | Fountain Lake Network</title>
 
-  <meta name="description" content="Submit your local business to be listed on Fountain Lake Network." />
+  <meta name="description" content="Submit a local business for inclusion in the Fountain Lake Network directory." />
   <meta name="robots" content="index, follow" />
 
   <link rel="stylesheet" href="/assets/css/style.css" />
@@ -31,47 +31,55 @@
 
     <!-- CONTENT -->
     <article class="content">
-      <h2>Submit Your Business</h2>
+      <h2>Submit a Local Business</h2>
 
       <p>
-        If you run a business in or around Fountain Lake and want it listed here,
-        you’re in the right place.
+        This directory exists for one reason:  
+        to give Fountain Lake residents a reliable list of businesses that actually serve the area.
       </p>
 
       <p>
-        This isn’t advertising fluff. The goal is to give locals a simple directory
-        of businesses that actually operate in the area.
+        No ads. No pay-to-play. Just accurate listings.
       </p>
 
-      <h3>What Gets Listed</h3>
-
+      <h3>Who Should Submit</h3>
       <ul>
-        <li>Local businesses and services</li>
+        <li>Brick-and-mortar businesses</li>
         <li>Home-based businesses</li>
-        <li>Contractors and trades</li>
-        <li>Shops, food, and professional services</li>
+        <li>Trades, contractors, and services</li>
+        <li>Food, retail, and professional services</li>
       </ul>
 
-      <p>
-        If it serves the community, it belongs here.
-      </p>
+      <h3>Business Information</h3>
 
-      <h3>Submit Your Info</h3>
-
-      <form class="form" method="post" action="#">
+      <form id="business-form" class="form">
         <label>
-          Business Name
-          <input type="text" name="business_name" required />
+          Business Name *
+          <input type="text" name="title" required />
         </label>
 
         <label>
-          Contact Name
-          <input type="text" name="contact_name" />
+          Category *
+          <select name="category" required>
+            <option value="">Select one</option>
+            <option>Dining</option>
+            <option>Retail</option>
+            <option>Services</option>
+            <option>Trades</option>
+            <option>Automotive</option>
+            <option>Health</option>
+            <option>Other</option>
+          </select>
         </label>
 
         <label>
-          Email
-          <input type="email" name="email" />
+          Business Description *
+          <textarea name="description" rows="4" required></textarea>
+        </label>
+
+        <label>
+          Website
+          <input type="url" name="website" placeholder="https://example.com" />
         </label>
 
         <label>
@@ -79,33 +87,47 @@
           <input type="tel" name="phone" />
         </label>
 
+        <h3>Location</h3>
+
         <label>
-          Website or Facebook Page
-          <input type="url" name="website" />
+          Street Address *
+          <input type="text" name="streetAddress" required />
         </label>
 
         <label>
-          Business Description
-          <textarea name="description" rows="4"></textarea>
+          City
+          <input type="text" name="city" />
         </label>
 
         <label>
-          Location / Service Area
-          <input type="text" name="location" placeholder="Fountain Lake, Hot Springs, surrounding areas" />
+          State
+          <input type="text" name="stateShort" value="AR" />
+        </label>
+
+        <label>
+          ZIP Code
+          <input type="text" name="postCode" />
         </label>
 
         <button type="submit">Submit Business</button>
       </form>
 
       <p class="muted">
-        Submissions are reviewed before being published.  
-        This keeps listings accurate and relevant.
+        Submissions are reviewed before publishing to keep the directory accurate.
       </p>
 
       <p class="back-link">
-        <a href="/">← Back to Home</a>
+        <a href="/business/">← Back to Business Directory</a>
       </p>
     </article>
   </main>
+
+  <!-- Placeholder JS (we wire this next) -->
+  <script>
+    document.getElementById("business-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      alert("Submission received. Review pending.");
+    });
+  </script>
 </body>
 </html>
