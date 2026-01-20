@@ -203,3 +203,81 @@ document.addEventListener("DOMContentLoaded", () => {
   loadSiteUpdates();
 
 });
+/* ===============================
+     business page map initialization
+     =============================== */
+
+async function initMap() {
+  const response = await fetch("https://cms.fountainlake.net/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      query: `
+        query {
+          businesses(first: 100, where: { status: PUBLISH }) {
+            nodes {
+              title
+              slug
+              businessFields {
+                category
+                website
+                phone
+                location {
+                  latitude
+                  longitude
+                  streetAddress
+                  city
+                  stateShort
+                  postCode
+                }
+              }
+            }
+          }
+        }
+      `,
+    }),
+  });
+
+  const result = await response.json();
+  const businesses = result.data.businesses.nodes;
+
+  // Center on Fountain Lake area
+  const map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 12,
+    center: { lat: 34.58, lng: -92.98 },
+  });
+
+  businesses.forEach((biz) => {
+    const loc = biz.businessFields.location;
+    if (!loc || !loc.latitude || !loc.longitude) return;
+
+    const marker = new google.maps.Marker({
+      position: {
+        lat: loc.latitude,
+        lng: loc.longitude,
+      },
+      map,
+      title: biz.title,
+    });
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `
+        <strong>${biz.title}</strong><br>
+        ${loc.streetAddress || ""}<br>
+        ${loc.city || ""} ${loc.stateShort || ""} ${loc.postCode || ""}<br>
+        ${biz.businessFields.phone || ""}<br>
+        ${
+          biz.businessFields.website
+            ? `<a href="${biz.businessFields.website}" target="_blank">Website</a>`
+            : ""
+        }
+      `,
+    });
+
+    marker.addListener("click", () => {
+      infoWindow.open(map, marker);
+    });
+  });
+}
