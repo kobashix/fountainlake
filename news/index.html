@@ -63,7 +63,7 @@
         const div = document.createElement("div");
         div.className = "news-item";
         div.innerHTML = `
-          <a href="/news/${item.slug}">
+          <a href="/news/${item.slug}" data-slug="${item.slug}" data-type="news">
             ${item.title}
           </a>
         `;
