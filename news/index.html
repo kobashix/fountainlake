@@ -69,12 +69,19 @@
         query: `
           {
             newsItems(first: 20, where: { status: PUBLISH }) {
-              nodes {
-                title
-                slug
-                date
-              }
-            }
+  nodes {
+    title
+    slug
+    date
+    featuredImage {
+      node {
+        sourceUrl
+        altText
+      }
+    }
+  }
+}
+
           }
         `
       })
@@ -99,12 +106,22 @@
         const div = document.createElement("div");
         div.className = "news-row";
 
-        div.innerHTML = `
-          <div class="news-date">${formatDate(item.date)}</div>
-          <h3 class="news-title">
-            <a href="/news/${item.slug}/">${item.title}</a>
-          </h3>
-        `;
+const image = item.featuredImage?.node?.sourceUrl
+  ? `<img src="${item.featuredImage.node.sourceUrl}"
+         alt="${item.featuredImage.node.altText || item.title}"
+         loading="lazy" />`
+  : "";
+
+div.innerHTML = `
+  <a class="news-link" href="/news/${item.slug}/">
+    ${image}
+    <div class="news-meta">
+      <div class="news-date">${formatDate(item.date)}</div>
+      <h3 class="news-title">${item.title}</h3>
+    </div>
+  </a>
+`;
+
 
         container.appendChild(div);
       });
