@@ -6,15 +6,20 @@
 
   <title>News | Fountain Lake Network</title>
 
-  <meta name="description" content="Local news updates for Fountain Lake, Arkansas." />
+  <meta name="description" content="Local news and incident updates for Fountain Lake, Arkansas and surrounding areas." />
   <meta name="robots" content="index, follow" />
 
   <link rel="stylesheet" href="/assets/css/style.css" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <main>
-    <header class="site-header">
+  <main id="app">
+    <div id="home">
       <div class="kicker">Arkansas</div>
       <h1 class="site-title">Fountain Lake Network</h1>
 
@@ -26,13 +31,151 @@
         <a href="/business/">Business</a>
         <a href="/about.html">About</a>
       </nav>
-    </header>
 
-    <article class="content">
-      <h2>News</h2>
-      <p>Latest community news and incident updates for Fountain Lake and nearby areas.</p>
-      <p class="back-link"><a href="/">← Back to Home</a></p>
-    </article>
+      <section>
+        <h2>Local News</h2>
+        <div class="box" id="news-list">Loading…</div>
+      </section>
+    </div>
   </main>
+
+  <script>
+    const ENDPOINT = "https://cms.fountainlake.net/graphql";
+    const app = document.getElementById("app");
+    const home = document.getElementById("home");
+
+    function renderError(container, msg) {
+      container.innerHTML = `<p class="error">${msg}</p>`;
+    }
+
+    function renderList(container, items) {
+      if (!items.length) {
+        container.innerHTML = "<p class='muted'>No news found.</p>";
+        return;
+      }
+
+      container.innerHTML = "";
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "news-item";
+        div.innerHTML = `
+          <a href="/news/${item.slug}/" data-slug="${item.slug}">
+            ${item.title}
+          </a>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function loadNewsList() {
+      const container = document.getElementById("news-list");
+
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            {
+              newsItems(first: 20, where: { status: PUBLISH }) {
+                nodes {
+                  title
+                  slug
+                }
+              }
+            }
+          `
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.errors) {
+          renderError(container, "Unable to load news.");
+          return;
+        }
+        renderList(container, res.data.newsItems.nodes);
+      })
+      .catch(() => renderError(container, "Network error."));
+    }
+
+    function loadArticle(slug, push = true) {
+      if (push) {
+        history.pushState({ slug }, "", `/news/${slug}/`);
+      }
+
+      app.innerHTML = "<p>Loading article…</p>";
+
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+            {
+              newsItemBy(slug: "${slug}") {
+                title
+                content
+                date
+              }
+            }
+          `
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        const item = res.data?.newsItemBy;
+
+        if (!item) {
+          app.innerHTML = "<h1>Not found</h1>";
+          return;
+        }
+
+        app.innerHTML = `
+          <a href="/news/" class="back-link" id="back-news">← Back to News</a>
+          <article>
+            <h1>${item.title}</h1>
+            ${item.content}
+          </article>
+        `;
+
+        document.getElementById("back-news").addEventListener("click", e => {
+          e.preventDefault();
+          history.pushState({}, "", "/news/");
+          restoreList();
+        });
+      });
+    }
+
+    function restoreList() {
+      app.innerHTML = "";
+      app.appendChild(home);
+      loadNewsList();
+    }
+
+    document.addEventListener("click", e => {
+      const link = e.target.closest("[data-slug]");
+      if (!link) return;
+
+      e.preventDefault();
+      loadArticle(link.dataset.slug);
+    });
+
+    window.addEventListener("popstate", e => {
+      if (!e.state) {
+        restoreList();
+      } else {
+        loadArticle(e.state.slug, false);
+      }
+    });
+
+    function hydrateFromPath() {
+      const match = window.location.pathname.match(/^\/news\/([^/]+)\/?$/);
+      if (match) {
+        loadArticle(match[1], false);
+      } else {
+        loadNewsList();
+      }
+    }
+
+    hydrateFromPath();
+  </script>
 </body>
 </html>
