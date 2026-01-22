@@ -6,7 +6,7 @@
 
   <title>Local News | Fountain Lake Network</title>
 
-  <meta name="description" content="Local news, incidents, and community updates for Fountain Lake, Arkansas." />
+  <meta name="description" content="Local news and incident updates for Fountain Lake, Arkansas." />
   <meta name="robots" content="index, follow" />
 
   <link rel="stylesheet" href="/assets/css/style.css" />
@@ -19,81 +19,83 @@
 
 <body>
   <main id="app">
-    <div class="kicker">Arkansas</div>
-    <h1 class="site-title">Fountain Lake Network</h1>
+    <header class="site-header">
+      <div class="kicker">Arkansas</div>
+      <h1 class="site-title">Fountain Lake Network</h1>
 
-    <nav class="site-nav">
-      <a href="/">Home</a>
-      <a href="/news/" class="active">News</a>
-      <a href="/school/">School</a>
-      <a href="/events/">Events</a>
-      <a href="/business/">Business</a>
-    </nav>
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/news/" class="active">News</a>
+        <a href="/school/">School</a>
+        <a href="/events/">Events</a>
+        <a href="/business/">Business</a>
+      </nav>
+    </header>
 
-    <article class="content" id="content">
+    <article class="content">
       <h2>Local News</h2>
-
-      <p>
-        This section covers local incidents, public safety updates, traffic events,
-        and community-related news affecting the Fountain Lake area.
+      <p class="muted">
+        Incident reports, public safety updates, and community news affecting
+        Fountain Lake and nearby areas.
       </p>
 
-      <p>
-        👉 <strong>Visit the <a href="/">homepage</a> for the latest headlines.</strong>
-      </p>
+      <div class="box" id="news-list">Loading…</div>
     </article>
   </main>
 
   <script>
     const ENDPOINT = "https://cms.fountainlake.net/graphql";
-    const content = document.getElementById("content");
+    const container = document.getElementById("news-list");
 
-    function loadArticle(slug) {
-      content.innerHTML = "<p>Loading article…</p>";
+    function renderError(err) {
+      container.innerHTML = "<p class='error'>Failed to load news.</p>";
+    }
 
-      fetch(ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            {
-              newsItemBy(slug: "${slug}") {
-                title
-                content
-                date
-              }
-            }
-          `
-        })
-      })
-      .then(res => res.json())
-      .then(res => {
-        const item = res.data.newsItemBy;
+    function renderList(items) {
+      if (!items.length) {
+        container.innerHTML = "<p class='muted'>No news articles found.</p>";
+        return;
+      }
 
-        if (!item) {
-          content.innerHTML = "<h2>Article not found</h2>";
-          return;
-        }
+      container.innerHTML = "";
 
-        content.innerHTML = `
-          <a href="/" class="back-link">← Back to Home</a>
-          <article>
-            <h2>${item.title}</h2>
-            ${item.content}
-          </article>
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "news-item";
+        div.innerHTML = `
+          <a href="/news/${item.slug}">
+            ${item.title}
+          </a>
         `;
-      })
-      .catch(() => {
-        content.innerHTML = "<p>Error loading article.</p>";
+        container.appendChild(div);
       });
     }
 
-    // Detect slug from URL
-    const match = window.location.pathname.match(/^\/news\/([^/]+)\/?$/);
-
-    if (match) {
-      loadArticle(match[1]);
-    }
+    fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `
+          {
+            newsItems(first: 25, where: { status: PUBLISH }) {
+              nodes {
+                title
+                slug
+              }
+            }
+          }
+        `
+      })
+    })
+      .then(res => res.json())
+      .then(res => {
+        if (res.errors) {
+          renderError(res.errors);
+          return;
+        }
+        renderList(res.data.newsItems.nodes);
+      })
+      .catch(renderError);
   </script>
 </body>
 </html>
