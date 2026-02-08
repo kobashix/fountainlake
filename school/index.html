@@ -10,14 +10,22 @@
   <script src="/assets/js/script.js"></script>
 
   <main class="container">
-    <div style="margin-top: 2rem;">
-      <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Fountain Lake Cobras</h2>
-      <p style="color: var(--text-muted); max-width: 600px; margin-bottom: 2rem;">
-        District announcements, sports updates, and student news.
-      </p>
+    
+    <div style="display: flex; align-items: center; gap: 1.5rem; margin-top: 2rem; margin-bottom: 2rem;">
+      <img src="/assets/images/cobra-logo.png" 
+           onerror="this.src='https://placehold.co/150x150/4b0082/ffd700?text=COBRAS'" 
+           alt="Fountain Lake Cobras" 
+           style="width: 100px; height: 100px; object-fit: contain; border-radius: 50%; border: 2px solid var(--cobra-gold); background: white;">
+      
+      <div>
+        <h2 class="brand" style="color:white; margin-bottom: 0.2rem;">Fountain Lake Cobras</h2>
+        <p style="color: var(--text-muted); margin: 0;">
+          District announcements, sports updates, and student news.
+        </p>
+      </div>
     </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 3rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 3rem;">
       
       <a href="https://www.flcobras.com/59258_1" target="_blank" class="card" style="text-align: center; text-decoration: none; border: 1px solid var(--border); background: var(--bg-dark);">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎓</div>
@@ -41,7 +49,7 @@
 
     </div>
 
-    <h3 class="kicker" style="margin-bottom: 1rem;">Latest School News</h3>
+    <h3 class="kicker" style="margin-bottom: 1rem; color: var(--cobra-gold);">Latest District & Sports News</h3>
 
     <div id="school-news-list" class="grid">
       <p class="muted">Checking for updates...</p>
@@ -52,15 +60,35 @@
     const ENDPOINT = "https://cms.fountainlake.net/graphql";
     const container = document.getElementById("school-news-list");
 
-    // Query: Fetch 'News' items that have the category 'School'
+    // UPDATED QUERY: Fetches posts with EITHER 'school' OR 'fl-cobras' category slugs
     const query = `
       {
-        newsItems(first: 10, where: { categoryName: "School" }) {
+        newsItems(
+          first: 20, 
+          where: { 
+            taxQuery: {
+              taxArray: [
+                {
+                  taxonomy: CATEGORY,
+                  field: SLUG,
+                  terms: ["school", "fl-cobras"],
+                  operator: IN
+                }
+              ]
+            }
+          }
+        ) {
           nodes {
             title
             slug
             date
             excerpt
+            categories {
+              nodes {
+                name
+                slug
+              }
+            }
             featuredImage {
               node {
                 sourceUrl
@@ -84,7 +112,7 @@
         container.innerHTML = `
           <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
             <p style="color: var(--text-muted);">No school news found right now.</p>
-            <small style="color: #666;">(Make sure posts are categorized as "School" in WordPress)</small>
+            <small style="color: #666;">(Make sure posts are categorized as "School" or "fl-cobras")</small>
           </div>
         `;
         return;
@@ -96,11 +124,17 @@
           ? `<img src="${post.featuredImage.node.sourceUrl}" alt="" style="width:100%; height:200px; object-fit:cover; border-radius:4px 4px 0 0; display:block;">` 
           : '';
 
+        // Check if it's a Sports post to add a little flair
+        const isSports = post.categories.nodes.some(c => c.slug === 'fl-cobras');
+        const badge = isSports 
+          ? `<span style="background:var(--cobra-gold); color:black; font-size:0.7rem; font-weight:bold; padding:2px 6px; border-radius:4px; margin-right:6px;">SPORTS</span>` 
+          : '';
+
         return `
           <article class="card news-card" style="padding:0; overflow:hidden;">
             ${img}
             <div style="padding: 1.5rem;">
-              <div class="kicker">${date}</div>
+              <div class="kicker" style="display:flex; align-items:center;">${badge} ${date}</div>
               <h3 style="margin: 0.5rem 0 1rem;"><a href="/news/${post.slug}">${post.title}</a></h3>
               <div style="color: #cbd5e1; font-size: 0.95rem;">${post.excerpt}</div>
               <a href="/news/${post.slug}" class="btn btn-outline" style="margin-top: 1rem; width:100%; text-align:center;">Read Update</a>
