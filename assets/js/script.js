@@ -353,3 +353,30 @@ function renderBusinesses(businesses) {
 }
 
 document.addEventListener("DOMContentLoaded", loadBusinesses);
+const navHTML = `
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="brand">Fountain Lake <span>Network</span></a>
+    <nav>
+      <ul class="nav-list">
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/news/" class="nav-link">News</a></li>
+        <li><a href="/school/" class="nav-link">School</a></li>
+        <li><a href="/events/" class="nav-link">Events</a></li>
+        <li><a href="/business/" class="nav-link">Business</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+`;
+
+// Insert header at the top of the body
+document.body.insertAdjacentHTML('afterbegin', navHTML);
+
+// Highlight current page
+const currentPath = window.location.pathname;
+document.querySelectorAll('.nav-link').forEach(link => {
+  if (link.getAttribute('href') === currentPath || (currentPath.includes(link.getAttribute('href')) && link.getAttribute('href') !== '/')) {
+    link.classList.add('active');
+  }
+});
