@@ -4,14 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Submit News | Fountain Lake Network</title>
+  <meta name="description" content="Submit local news, tips, and alerts for Fountain Lake." />
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
-  <script src="/assets/js/script.js"></script> <main class="container">
-    <div style="margin-top: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+  <script src="/assets/js/script.js"></script>
+
+  <main class="container">
+    <div style="max-width: 650px; margin: 3rem auto;">
       <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Submit News</h2>
       <p style="color: var(--text-muted); margin-bottom: 2rem;">
-        See something? Say something. Submissions are reviewed before publishing.
+        See something? Say something. All submissions are reviewed by an editor before publishing.
       </p>
 
       <form id="submit-form" class="card" style="display: flex; flex-direction: column; gap: 1.5rem;">
@@ -19,15 +22,15 @@
         <div>
           <label class="kicker" for="title">Headline</label>
           <input type="text" id="title" required 
-            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px;"
-            placeholder="e.g. Lost Dog on Highway 5">
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;"
+            placeholder="e.g. Traffic Accident on Hwy 7">
         </div>
 
         <div>
           <label class="kicker" for="content">Details</label>
           <textarea id="content" required rows="6"
-            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: inherit;"
-            placeholder="Include who, what, where, and when..."></textarea>
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: inherit; font-size: 1rem;"
+            placeholder="Include the who, what, where, and when..."></textarea>
         </div>
 
         <div>
@@ -37,8 +40,12 @@
             placeholder="Will be listed as 'Community Submission' if blank">
         </div>
 
-        <button type="submit" class="btn" style="border:none; cursor:pointer; font-size:1rem;">Submit for Review</button>
-        <p id="status-msg" style="text-align: center; font-size: 0.9rem; min-height: 1.5rem;"></p>
+        <div style="background: rgba(251, 191, 36, 0.1); padding: 1rem; border-radius: 6px; font-size: 0.9rem; color: var(--cobra-gold);">
+          <strong>Note:</strong> To submit photos, please email them directly to <a href="mailto:news@fountainlake.net" style="text-decoration: underline;">news@fountainlake.net</a> instead.
+        </div>
+
+        <button type="submit" class="btn" style="border:none; cursor:pointer; font-size:1rem; width: 100%;">Submit for Review</button>
+        <p id="status-msg" style="text-align: center; font-size: 0.9rem; margin-top: 1rem;"></p>
       </form>
     </div>
   </main>
@@ -46,42 +53,43 @@
   <script>
     document.getElementById('submit-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       const btn = e.target.querySelector('button');
       const msg = document.getElementById('status-msg');
-      
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+      const author = document.getElementById('author').value || "Anonymous";
+
       // Lock UI
       btn.disabled = true;
       btn.innerText = "Sending...";
       msg.style.color = "var(--text-muted)";
       msg.innerText = "";
 
-      const payload = {
-        title: document.getElementById('title').value,
-        content: document.getElementById('content').value,
-        authorName: document.getElementById('author').value || "Anonymous"
-      };
-
       try {
         const res = await fetch('/api/submit-news', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ title, content, authorName: author })
         });
         
         const json = await res.json();
         
         if (json.success) {
           document.getElementById('submit-form').innerHTML = `
-            <div style="text-align:center; padding: 2rem;">
-              <h3 style="color: var(--cobra-gold)">Received!</h3>
-              <p>Your news has been sent to the editor for approval.</p>
-              <a href="/news/" class="btn btn-outline">Back to News</a>
+            <div style="text-align:center; padding: 3rem 1rem;">
+              <h3 style="color: var(--cobra-gold); font-size: 2rem;">Received!</h3>
+              <p style="color: var(--text-muted); margin-bottom: 2rem;">Your news has been sent to the editor.</p>
+              <a href="/news/" class="btn btn-outline">Read Local News</a>
+              <br><br>
+              <a href="/news/submit.html" style="font-size: 0.9rem; color: var(--text-muted);">Submit another</a>
             </div>
           `;
         } else {
           throw new Error(json.message || "Unknown error");
         }
       } catch (err) {
+        console.error(err);
         msg.style.color = "#ff6b6b";
         msg.innerText = "Error: " + err.message;
         btn.disabled = false;

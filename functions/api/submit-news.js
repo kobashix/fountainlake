@@ -1,24 +1,23 @@
 export async function onRequestPost(context) {
   try {
-    // 1. Get data from the frontend form
+    // 1. Get data from frontend
     const { title, content, authorName } = await context.request.json();
 
-    // 2. Validate
     if (!title || !content) {
-      return new Response(JSON.stringify({ success: false, message: "Missing fields" }), { status: 400 });
+      return new Response(JSON.stringify({ success: false, message: "Missing title or content" }), { status: 400 });
     }
 
-    // 3. Prepare the GraphQL Mutation for WordPress
-    // We set status: PENDING so it doesn't go live immediately.
+    // 2. Prepare GraphQL Mutation
+    // Note: We use 'createNewsItem' because your CPT is named 'news'. 
+    // If this fails with "Unknown Type", verify your CPT UI settings.
     const query = `
-      mutation CreateCommunityPost($title: String!, $body: String!) {
-        createPost(input: {
+      mutation CreateCommunityNews($title: String!, $body: String!) {
+        createNewsItem(input: {
           title: $title, 
           content: $body, 
-          status: PENDING, 
-          categories: { nodes: { name: "Community" } }
+          status: PENDING
         }) {
-          post {
+          newsItem {
             id
             databaseId
           }
@@ -26,12 +25,17 @@ export async function onRequestPost(context) {
       }
     `;
 
-    // 4. Send to WordPress
-    // We access environment variables for the password
+    // 3. Authenticate with WordPress
     const wpUser = context.env.WP_USERNAME; 
     const wpPass = context.env.WP_APP_PASSWORD;
-    const authString = btoa(`${wpUser}:${wpPass}`); // Create Basic Auth Token
+    
+    if (!wpUser || !wpPass) {
+      throw new Error("Server misconfiguration: Missing credentials");
+    }
 
+    const authString = btoa(`${wpUser}:${wpPass}`);
+
+    // 4. Send to CMS
     const wpRes = await fetch("https://cms.fountainlake.net/graphql", {
       method: "POST",
       headers: {
@@ -42,19 +46,19 @@ export async function onRequestPost(context) {
         query: query,
         variables: {
           title: title,
-          body: `${content}\n\n--- Submitted by: ${authorName}`
+          body: `${content}\n\n<p><em>Submitted by: ${authorName} via Web Form</em></p>`
         }
       })
     });
 
     const wpJson = await wpRes.json();
 
-    // 5. Check if WordPress accepted it
+    // 5. Handle Errors
     if (wpJson.errors) {
       return new Response(JSON.stringify({ success: false, message: wpJson.errors[0].message }), { status: 500 });
     }
 
-    return new Response(JSON.stringify({ success: true, id: wpJson.data.createPost.post.databaseId }), { status: 200 });
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
 
   } catch (err) {
     return new Response(JSON.stringify({ success: false, message: err.message }), { status: 500 });
