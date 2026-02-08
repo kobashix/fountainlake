@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Local Business Directory | Fountain Lake Network</title>
+  <meta name="description" content="Find local businesses in Fountain Lake, AR." />
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
@@ -55,6 +56,11 @@
       `;
 
       fetchData(query).then(data => {
+        if (!data || !data.businesses) {
+             container.innerHTML = "<p class='muted'>No businesses found.</p>";
+             return;
+        }
+
         const items = data.businesses.nodes;
         if (!items.length) {
           container.innerHTML = "<p class='muted'>No businesses found.</p>";
@@ -63,7 +69,6 @@
 
         container.innerHTML = items.map(biz => {
           const fields = biz.businessFields || {};
-          // Handle Category array or string
           const cat = Array.isArray(fields.category) ? fields.category.join(", ") : fields.category;
           const catLabel = cat ? `<span class="kicker" style="margin-bottom:0.5rem; display:inline-block;">${cat}</span>` : '';
 
@@ -71,7 +76,7 @@
             <article class="card business-card">
               ${catLabel}
               <h3><a href="/business/${biz.slug}">${biz.title}</a></h3>
-              <p style="color: #cbd5e1; font-size: 0.95rem;">${fields.description || ''}</p>
+              <p style="color: #cbd5e1; font-size: 0.95rem;">${fields.description ? fields.description.substring(0, 100) + '...' : ''}</p>
               <a href="/business/${biz.slug}" class="btn btn-outline" style="width:100%; text-align:center; margin-top:auto;">View Details &rarr;</a>
             </article>
           `;
@@ -81,14 +86,14 @@
 
     // --- 2. LOAD SINGLE BUSINESS ---
     function loadSingleBusiness(slug) {
-      // Hide the main directory header to focus on the business
       document.getElementById('header-area').style.display = 'none';
-      container.className = "article-container"; // Switch from Grid to Single layout
+      container.className = "article-container"; 
       container.innerHTML = "<p class='muted'>Fetching details...</p>";
 
+      // UPDATED QUERY: Using 'business(id: ..., idType: SLUG)' which is safer
       const query = `
         {
-          businessBy(slug: "${slug}") {
+          business(id: "${slug}", idType: SLUG) {
             title
             businessFields {
               description
@@ -107,27 +112,35 @@
       `;
 
       fetchData(query).then(data => {
-        const biz = data ? data.businessBy : null;
+        // We look for 'business', not 'businessBy'
+        const biz = data ? data.business : null;
+        
         if (!biz) {
-          container.innerHTML = "<h2>Business not found</h2><a href='/business/' class='btn'>Back to Directory</a>";
+          container.innerHTML = "<h2>Business not found</h2><p class='muted'>Could not locate: " + slug + "</p><a href='/business/' class='btn'>Back to Directory</a>";
           return;
         }
 
         const fields = biz.businessFields || {};
         
-        // Format Address if available
+        // Address Logic
         let addressBlock = "";
-        if (fields.location) {
-           addressBlock = `<p style="color:white; margin-bottom:1rem;">📍 ${fields.location.streetAddress}, ${fields.location.city}</p>`;
+        if (fields.location && fields.location.streetAddress) {
+           addressBlock = `<p style="color:white; margin-bottom:1rem; font-size: 1.1rem;">📍 ${fields.location.streetAddress}, ${fields.location.city}</p>`;
         }
 
-        // Format Buttons
+        // Buttons
         const phoneBtn = fields.phone ? `<a href="tel:${fields.phone}" class="btn">📞 Call ${fields.phone}</a>` : '';
         const webBtn = fields.website ? `<a href="${fields.website}" target="_blank" class="btn btn-outline">🌐 Visit Website</a>` : '';
+        
+        // Category Tag
+        const cat = Array.isArray(fields.category) ? fields.category.join(", ") : fields.category;
+        const catLabel = cat ? `<span class="kicker" style="margin-bottom:1rem; display:inline-block;">${cat}</span>` : '';
 
         container.innerHTML = `
           <a href="/business/" class="kicker" style="cursor:pointer; display:inline-block; margin-bottom:1rem;">&larr; Back to Directory</a>
-          <h1 style="font-size: 2.5rem; color: white; margin-bottom: 0.5rem;">${biz.title}</h1>
+          <br>
+          ${catLabel}
+          <h1 style="font-size: 2.5rem; color: white; margin-bottom: 0.5rem; line-height: 1.1;">${biz.title}</h1>
           ${addressBlock}
           
           <div style="font-size: 1.1rem; line-height: 1.6; color: #e2e8f0; margin: 2rem 0; padding: 1.5rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px;">
@@ -151,6 +164,10 @@
           body: JSON.stringify({ query })
         });
         const json = await res.json();
+        
+        if (json.errors) {
+            console.error(json.errors);
+        }
         return json.data;
       } catch (e) {
         console.error(e);
