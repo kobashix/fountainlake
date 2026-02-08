@@ -1,5 +1,11 @@
 export async function onRequest(context) {
-  // 1. Fetch the actual app shell (news/index.html)
-  // 2. Serve it to the browser, allowing the URL to stay as /news/some-cool-story
+  const url = new URL(context.request.url);
+
+  // 1. HALL PASS: If the user wants the submit page, give them the actual file.
+  if (url.pathname.includes("submit.html")) {
+    return context.env.ASSETS.fetch(url);
+  }
+
+  // 2. ROUTER: For everything else (articles), serve the News App Shell.
   return context.env.ASSETS.fetch(new URL("/news/index.html", context.request.url));
 }
