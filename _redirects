@@ -1,8 +1,11 @@
-# 1. Protect the actual News App file so it doesn't get hijacked
+# 1. ALLOW the submit page to load (The Hall Pass)
+/news/submit.html  /news/submit.html  200
+
+# 2. Protect the News App Shell
 /news/index.html  /news/index.html  200
 
-# 2. Tell Cloudflare: "If it's a News link, serve the News App"
+# 3. Send all OTHER news links to the App Shell
 /news/* /news/index.html  200
 
-# 3. Catch-all: "For everything else, serve the Home Page"
+# 4. Catch-all for the rest of the site
 /* /index.html  200
