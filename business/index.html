@@ -3,33 +3,96 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <title>Local Businesses | Fountain Lake Network</title>
-  <meta name="description" content="Local businesses serving the Fountain Lake community." />
-
+  <title>Local Business Directory | Fountain Lake Network</title>
+  <meta name="description" content="Find local businesses, services, and shops in Fountain Lake." />
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
-
 <body>
-  <main>
-    <!-- CONTENT -->
-    <section class="content">
-      <h2>Local Businesses</h2>
+  <script src="/assets/js/script.js"></script>
 
-      <p class="muted">
-        A community-maintained directory of businesses that actually operate in and around Fountain Lake.
+  <main class="container">
+    <div style="margin-top: 2rem;">
+      <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Business Directory</h2>
+      <p style="color: var(--text-muted); max-width: 600px; margin-bottom: 2rem;">
+        Support local. Here are the businesses serving the Fountain Lake community.
       </p>
+    </div>
 
-      <div id="business-list" class="business-grid">
-        <p class="muted">Loading businesses…</p>
+    <div id="filters" style="margin-bottom: 2rem; display:flex; gap: 0.5rem; flex-wrap: wrap;">
       </div>
 
-      <p class="back-link">
-        <a href="/business/submit.html">Submit a Business →</a>
-      </p>
-    </section>
+    <div id="business-list" class="grid">
+      <p class="muted">Loading directory...</p>
+    </div>
   </main>
 
-  <script src="/assets/js/script.js"></script>
+  <script>
+    const ENDPOINT = "https://cms.fountainlake.net/graphql";
+    const container = document.getElementById("business-list");
+
+    // We fetch Title, Slug, and the ACF 'businessFields' 
+    const query = `
+      {
+        businesses(first: 100, where: { orderby: { field: TITLE, order: ASC } }) {
+          nodes {
+            id
+            title
+            slug
+            businessFields {
+              description
+              phone
+              website
+              category
+            }
+          }
+        }
+      }
+    `;
+
+    fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query })
+    })
+    .then(res => res.json())
+    .then(data => {
+      const items = data.data?.businesses?.nodes || [];
+
+      if (!items.length) {
+        container.innerHTML = "<p class='muted'>No businesses found yet.</p>";
+        return;
+      }
+
+      container.innerHTML = items.map(biz => {
+        const fields = biz.businessFields || {};
+        const phone = fields.phone ? `<div style="margin-top:0.5rem; font-size: 0.9rem;">📞 <a href="tel:${fields.phone}" style="color:var(--text-muted); text-decoration:none;">${fields.phone}</a></div>` : '';
+        const website = fields.website ? `<a href="${fields.website}" target="_blank" class="btn btn-outline" style="margin-top:1rem; display:inline-block; width:100%; text-align:center;">Visit Website</a>` : '';
+        const desc = fields.description ? `<p style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 0;">${fields.description}</p>` : '';
+        
+        // Handle Category (It might be an array or a string)
+        let catLabel = "";
+        if (fields.category) {
+             const catText = Array.isArray(fields.category) ? fields.category.join(", ") : fields.category;
+             catLabel = `<span class="kicker" style="margin-bottom:0.5rem; display:inline-block;">${catText}</span>`;
+        }
+
+        return `
+          <article class="card business-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              ${catLabel}
+              <h3 style="margin-bottom: 0.5rem; color:white;">${biz.title}</h3>
+              ${desc}
+              ${phone}
+            </div>
+            ${website}
+          </article>
+        `;
+      }).join("");
+    })
+    .catch(err => {
+      console.error(err);
+      container.innerHTML = "<p class='error'>Unable to load directory.</p>";
+    });
+  </script>
 </body>
 </html>
