@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Local Business Directory | Fountain Lake Network</title>
-  <meta name="description" content="Find local businesses in Fountain Lake, AR." />
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
 <body>
@@ -21,11 +20,14 @@
     <div id="business-container" class="grid">
       <p class="muted">Loading...</p>
     </div>
+
+    <div id="debug-box" style="display:none; margin-top: 2rem; padding: 1rem; background: #330000; color: #ff9999; border: 1px solid red; font-family: monospace; white-space: pre-wrap;"></div>
   </main>
 
   <script>
     const ENDPOINT = "https://cms.fountainlake.net/graphql";
     const container = document.getElementById("business-container");
+    const debugBox = document.getElementById("debug-box");
 
     // Router Logic
     const path = window.location.pathname.replace(/\/$/, ""); 
@@ -56,14 +58,11 @@
       `;
 
       fetchData(query).then(data => {
-        if (!data || !data.businesses) {
-             container.innerHTML = "<p class='muted'>No businesses found.</p>";
-             return;
-        }
+        if (!data || !data.businesses) return; // Error already handled in fetchData
 
         const items = data.businesses.nodes;
         if (!items.length) {
-          container.innerHTML = "<p class='muted'>No businesses found.</p>";
+          container.innerHTML = "<p class='muted'>No businesses found in CMS.</p>";
           return;
         }
 
@@ -90,11 +89,12 @@
       container.className = "article-container"; 
       container.innerHTML = "<p class='muted'>Fetching details...</p>";
 
-      // UPDATED QUERY: Using 'business(id: ..., idType: SLUG)' which is safer
+      // UPDATED QUERY: Using 'business(id: ..., idType: SLUG)'
       const query = `
         {
           business(id: "${slug}", idType: SLUG) {
             title
+            slug
             businessFields {
               description
               phone
@@ -112,27 +112,23 @@
       `;
 
       fetchData(query).then(data => {
-        // We look for 'business', not 'businessBy'
         const biz = data ? data.business : null;
         
         if (!biz) {
-          container.innerHTML = "<h2>Business not found</h2><p class='muted'>Could not locate: " + slug + "</p><a href='/business/' class='btn'>Back to Directory</a>";
+          container.innerHTML = `<h2>Business not found</h2><a href='/business/' class='btn'>Back to Directory</a>`;
+          showError(`Query returned null for slug: "${slug}".\nPossible reasons:\n1. The slug in the URL does not match the slug in WordPress.\n2. The post status is not 'publish'.`);
           return;
         }
 
         const fields = biz.businessFields || {};
         
-        // Address Logic
         let addressBlock = "";
         if (fields.location && fields.location.streetAddress) {
            addressBlock = `<p style="color:white; margin-bottom:1rem; font-size: 1.1rem;">📍 ${fields.location.streetAddress}, ${fields.location.city}</p>`;
         }
 
-        // Buttons
         const phoneBtn = fields.phone ? `<a href="tel:${fields.phone}" class="btn">📞 Call ${fields.phone}</a>` : '';
         const webBtn = fields.website ? `<a href="${fields.website}" target="_blank" class="btn btn-outline">🌐 Visit Website</a>` : '';
-        
-        // Category Tag
         const cat = Array.isArray(fields.category) ? fields.category.join(", ") : fields.category;
         const catLabel = cat ? `<span class="kicker" style="margin-bottom:1rem; display:inline-block;">${cat}</span>` : '';
 
@@ -155,7 +151,7 @@
       });
     }
 
-    // --- HELPER ---
+    // --- HELPER WITH ERROR DISPLAY ---
     async function fetchData(query) {
       try {
         const res = await fetch(ENDPOINT, {
@@ -165,14 +161,22 @@
         });
         const json = await res.json();
         
+        // IF GRAPHQL ERROR
         if (json.errors) {
-            console.error(json.errors);
+            showError("GraphQL Error:\n" + JSON.stringify(json.errors, null, 2));
+            return null;
         }
         return json.data;
       } catch (e) {
-        console.error(e);
-        container.innerHTML = "<p class='error'>System Error</p>";
+        showError("Network/System Error:\n" + e.message);
+        return null;
       }
+    }
+
+    function showError(msg) {
+        console.error(msg);
+        debugBox.style.display = "block";
+        debugBox.innerText += "--------------------------------\n" + msg + "\n";
     }
   </script>
 </body>
