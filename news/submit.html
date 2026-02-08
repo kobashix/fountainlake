@@ -10,25 +10,25 @@
   <script src="/assets/js/script.js"></script>
 
   <main class="container">
-    <div style="max-width: 650px; margin: 3rem auto;">
+    <div style="max-width: 600px; margin: 3rem auto;">
       <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Add Your Business</h2>
       <p style="color: var(--text-muted); margin-bottom: 2rem;">
         Listings are free. We only accept businesses that physically serve the Fountain Lake area.
       </p>
 
-      <form id="biz-submit-form" class="card" style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <form id="biz-submit-form" class="card" style="display: flex; flex-direction: column; gap: 1.5rem; background: #1e293b; padding: 2rem; border-radius: 8px; border: 1px solid var(--border);">
         
         <div>
-          <label class="kicker" for="title">Business Name</label>
+          <label class="kicker" for="title" style="display:block; margin-bottom:0.5rem;">Business Name</label>
           <input type="text" id="title" required 
-            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px;"
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;"
             placeholder="e.g. Fountain Lake Hardware">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div>
-            <label class="kicker" for="category">Category</label>
-            <select id="category" style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px;">
+            <label class="kicker" for="category" style="display:block; margin-bottom:0.5rem;">Category</label>
+            <select id="category" style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;">
               <option value="Dining">Dining</option>
               <option value="Retail">Retail</option>
               <option value="Services">Services</option>
@@ -39,30 +39,34 @@
             </select>
           </div>
           <div>
-            <label class="kicker" for="phone">Phone</label>
+            <label class="kicker" for="phone" style="display:block; margin-bottom:0.5rem;">Phone</label>
             <input type="tel" id="phone" 
-              style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px;"
-              placeholder="e.g. 501-555-0199">
+              style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;"
+              placeholder="501-555-0199">
           </div>
         </div>
 
         <div>
-          <label class="kicker" for="description">Description</label>
+          <label class="kicker" for="description" style="display:block; margin-bottom:0.5rem;">Description</label>
           <textarea id="description" required rows="4"
-            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: inherit;"
-            placeholder="What do you offer? What are your hours?"></textarea>
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: inherit; font-size: 1rem;"
+            placeholder="Tell us what you offer and your hours..."></textarea>
         </div>
 
         <div>
-          <label class="kicker" for="website">Website / Facebook Link</label>
+          <label class="kicker" for="website" style="display:block; margin-bottom:0.5rem;">Website / Facebook</label>
           <input type="url" id="website" 
-            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px;"
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;"
             placeholder="https://...">
         </div>
 
-        <button type="submit" class="btn" style="border:none; cursor:pointer; width: 100%;">Submit for Review</button>
-        <p id="status-msg" style="text-align: center; font-size: 0.9rem; margin-top: 1rem;"></p>
+        <button type="submit" class="btn" style="border:none; cursor:pointer; width: 100%; font-size: 1rem; padding: 1rem;">Submit for Review</button>
+        <p id="status-msg" style="text-align: center; font-size: 0.9rem; margin-top: 1rem; min-height: 1.5rem;"></p>
       </form>
+
+      <div style="text-align: center; margin-top: 2rem;">
+        <a href="/business/" style="color: var(--text-muted); text-decoration: none;">&larr; Back to Directory</a>
+      </div>
     </div>
   </main>
 
@@ -99,9 +103,9 @@
         if (json.success) {
           document.getElementById('biz-submit-form').innerHTML = `
             <div style="text-align:center; padding: 3rem 1rem;">
-              <h3 style="color: var(--cobra-gold); font-size: 2rem;">Received!</h3>
-              <p style="color: var(--text-muted);">Your listing has been sent to the editor.</p>
-              <a href="/business/" class="btn btn-outline" style="margin-top:1rem;">Back to Directory</a>
+              <h3 style="color: var(--cobra-gold); font-size: 2rem; margin-bottom: 1rem;">Received!</h3>
+              <p style="color: var(--text-muted); font-size: 1.1rem;">Your listing has been sent to the editor.</p>
+              <a href="/business/" class="btn btn-outline" style="margin-top:2rem; display:inline-block;">Back to Directory</a>
             </div>
           `;
         } else {
