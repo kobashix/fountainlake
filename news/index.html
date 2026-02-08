@@ -40,25 +40,31 @@
     }
 
     function renderList(items) {
-      if (!items.length) {
-        container.innerHTML = "<p class='muted'>No news articles found.</p>";
-        return;
-      }
+  if (!items.length) {
+    container.innerHTML = "<p class='muted'>No news articles found.</p>";
+    return;
+  }
 
-      container.innerHTML = "";
+  container.innerHTML = "";
+  // Add the grid class to the container for styling
+  container.className = "grid"; 
 
-      items.forEach(item => {
-        const div = document.createElement("div");
-div.className = "news-item";
-div.innerHTML = `
-  <div class="kicker">News</div>
-  <a href="/news/${item.slug}" data-slug="${item.slug}">
-    ${item.title}
-  </a>
-`;
-        container.appendChild(div);
-      });
-    }
+  items.forEach(item => {
+    const article = document.createElement("article");
+    article.className = "card news-card";
+    
+    // Formatting the date (optional, if your API returns 'date')
+    const dateStr = item.date ? new Date(item.date).toLocaleDateString() : 'Recent';
+
+    article.innerHTML = `
+      <span class="kicker">${dateStr}</span>
+      <h3><a href="/news/${item.slug}" data-slug="${item.slug}">${item.title}</a></h3>
+      <p>${item.excerpt || 'Click to read full story...'}</p>
+      <a href="/news/${item.slug}" class="btn btn-outline">Read More &rarr;</a>
+    `;
+    container.appendChild(article);
+  });
+}
 
     fetch(ENDPOINT, {
       method: "POST",
