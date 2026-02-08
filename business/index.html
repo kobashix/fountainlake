@@ -5,6 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Local Business Directory | Fountain Lake Network</title>
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <style>
+    /* Specific styles for the map */
+    .map-container {
+      width: 100%;
+      height: 300px;
+      margin-top: 2rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--bg-dark);
+    }
+    .map-container iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+  </style>
 </head>
 <body>
   <script src="/assets/js/script.js"></script>
@@ -34,8 +51,7 @@
     const parts = path.split("/");
     const slug = parts.length > 2 && parts[parts.length - 1] !== "business" ? parts[parts.length - 1] : null;
 
-    // --- MAIN LOGIC ---
-    // We run the same "Fetch All" query for both views. This ensures if it's on the list, it works on the page.
+    // --- MAIN QUERY ---
     const MASTER_QUERY = `
       {
         businesses(first: 100, where: { orderby: { field: TITLE, order: ASC } }) {
@@ -60,10 +76,7 @@
     `;
 
     fetchData(MASTER_QUERY).then(data => {
-      if (!data || !data.businesses) {
-         container.innerHTML = "<p class='muted'>Directory unavailable.</p>";
-         return;
-      }
+      if (!data || !data.businesses) return;
       
       const allBusinesses = data.businesses.nodes;
 
@@ -99,31 +112,61 @@
 
     // --- RENDER SINGLE ---
     function renderSingleBusiness(slug, allBusinesses) {
-      // Find the specific business in the data we already have
       const biz = allBusinesses.find(b => b.slug === slug);
 
       if (!biz) {
         document.getElementById('header-area').style.display = 'none';
-        container.innerHTML = `<h2>Business not found</h2><p class='muted'>Could not locate: ${slug}</p><a href='/business/' class='btn'>Back to Directory</a>`;
+        container.innerHTML = `<h2>Business not found</h2><a href='/business/' class='btn'>Back to Directory</a>`;
         return;
       }
 
-      // Switch Layout
+      // Hide Header & Switch Layout
       document.getElementById('header-area').style.display = 'none';
       container.className = "article-container"; 
 
       const fields = biz.businessFields || {};
       
+      // 1. Build Address & Map Links
       let addressBlock = "";
+      let mapEmbed = "";
+      let gpsBtn = "";
+
       if (fields.location && fields.location.streetAddress) {
-         addressBlock = `<p style="color:white; margin-bottom:1rem; font-size: 1.1rem;">📍 ${fields.location.streetAddress}, ${fields.location.city}</p>`;
+         // Clean "null" zip code issue
+         const zip = fields.location.postCode ? fields.location.postCode : '';
+         const cleanAddress = `${fields.location.streetAddress}, ${fields.location.city}, ${fields.location.state} ${zip}`;
+         
+         // Create Google Maps URL
+         const encodedAddr = encodeURIComponent(cleanAddress);
+         const googleMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddr}`;
+         
+         // Create Elements
+         addressBlock = `<p style="color:white; margin-bottom:1rem; font-size: 1.1rem;">📍 ${cleanAddress}</p>`;
+         gpsBtn = `<a href="${googleMapsLink}" target="_blank" class="btn btn-outline" style="border-color: var(--cobra-gold); color: var(--cobra-gold);">🗺️ Get Directions</a>`;
+         
+         // Create Embed Iframe
+         mapEmbed = `
+           <div class="map-container">
+             <iframe 
+               src="https://maps.google.com/maps?q=${encodedAddr}&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+               frameborder="0" 
+               scrolling="no" 
+               marginheight="0" 
+               marginwidth="0">
+             </iframe>
+           </div>
+         `;
       }
 
+      // 2. Buttons
       const phoneBtn = fields.phone ? `<a href="tel:${fields.phone}" class="btn">📞 Call ${fields.phone}</a>` : '';
       const webBtn = fields.website ? `<a href="${fields.website}" target="_blank" class="btn btn-outline">🌐 Visit Website</a>` : '';
+      
+      // 3. Category
       const cat = Array.isArray(fields.category) ? fields.category.join(", ") : fields.category;
       const catLabel = cat ? `<span class="kicker" style="margin-bottom:1rem; display:inline-block;">${cat}</span>` : '';
 
+      // 4. Render
       container.innerHTML = `
         <a href="/business/" class="kicker" style="cursor:pointer; display:inline-block; margin-bottom:1rem;">&larr; Back to Directory</a>
         <br>
@@ -136,9 +179,12 @@
         </div>
 
         <div style="display:flex; gap: 1rem; flex-wrap: wrap;">
+          ${gpsBtn}
           ${phoneBtn}
           ${webBtn}
         </div>
+
+        ${mapEmbed}
       `;
     }
 
