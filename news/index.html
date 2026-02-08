@@ -61,12 +61,13 @@
 
       items.forEach(item => {
         const div = document.createElement("div");
-        div.className = "news-item";
-        div.innerHTML = `
-          <a href="/news/${item.slug}" data-slug="${item.slug}" data-type="news">
-            ${item.title}
-          </a>
-        `;
+div.className = "news-item";
+div.innerHTML = `
+  <div class="kicker">News</div>
+  <a href="/news/${item.slug}" data-slug="${item.slug}">
+    ${item.title}
+  </a>
+`;
         container.appendChild(div);
       });
     }
