@@ -3,145 +3,149 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <title>Local News | Fountain Lake Network</title>
-
   <meta name="description" content="Local news and incident updates for Fountain Lake, Arkansas." />
-  <meta name="robots" content="index, follow" />
-
   <link rel="stylesheet" href="/assets/css/style.css" />
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <main id="app">
-
-    <article class="content">
-      <h2>Local News</h2>
-      <p class="muted">
-        Incident reports, public safety updates, and community news affecting
-        Fountain Lake and nearby areas.
+  <main class="container">
+    <div style="margin-top: 2rem;">
+      <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Local News</h2>
+      <p style="color: var(--text-muted); max-width: 600px; margin-bottom: 2rem;">
+        Incident reports, public safety updates, and community news affecting Fountain Lake and nearby areas.
       </p>
+    </div>
 
-      <div class="box" id="news-list">Loading…</div>
-    </article>
+    <div id="news-list">
+      <p class="muted">Loading updates...</p>
+    </div>
   </main>
 
-<script>
-  const ENDPOINT = "https://cms.fountainlake.net/graphql";
-  const container = document.getElementById("news-list");
+  <script src="/assets/js/script.js"></script>
 
-  // --- ROUTER LOGIC: The Brains ---
-  // This decides if we are looking at the "List" or a "Single Story"
-  const path = window.location.pathname.replace(/\/$/, ""); // Remove trailing slash
-  const parts = path.split("/");
-  
-  // logic: if URL is like /news/something, we want the single article
-  const isSingle = parts.length > 2 && parts[parts.length - 1] !== "news";
+  <script>
+    // 1. Configuration
+    const ENDPOINT = "https://cms.fountainlake.net/graphql";
+    const container = document.getElementById("news-list");
 
-  if (isSingle) {
-    const slug = parts[parts.length - 1];
-    loadSingleArticle(slug);
-  } else {
-    loadNewsList();
-  }
+    // 2. Router Logic
+    // Clean the path to handle /news vs /news/
+    const path = window.location.pathname.replace(/\/$/, ""); 
+    const parts = path.split("/");
+    
+    // If we have more path parts than just ["", "news"], it's an article
+    // Example: ["", "news", "accident-on-hwy-7"] -> Length 3 -> isSingle = true
+    const isSingle = parts.length > 2 && parts[parts.length - 1] !== "news";
 
-  // --- MODE A: Load the List ---
-  function loadNewsList() {
-    const query = `
-      {
-        newsItems(first: 20, where: { status: PUBLISH }) {
-          nodes {
-            title
-            slug
-            date
-            excerpt
+    // 3. Initialize
+    if (isSingle) {
+      const slug = parts[parts.length - 1];
+      loadSingleArticle(slug);
+    } else {
+      loadNewsList();
+    }
+
+    // --- FUNCTION: Load List ---
+    function loadNewsList() {
+      const query = `
+        {
+          newsItems(first: 20, where: { status: PUBLISH }) {
+            nodes {
+              title
+              slug
+              date
+              excerpt
+            }
           }
         }
-      }
-    `;
-
-    fetchData(query).then(data => {
-      const items = data.newsItems.nodes;
-      if (!items.length) {
-        container.innerHTML = "<p class='muted'>No news articles found.</p>";
-        return;
-      }
-      
-      // Render Grid
-      container.className = "grid"; 
-      container.innerHTML = items.map(item => `
-        <article class="card news-card">
-          <span class="kicker">${new Date(item.date).toLocaleDateString()}</span>
-          <h3><a href="/news/${item.slug}">${item.title}</a></h3>
-          <p>${item.excerpt || ''}</p>
-          <a href="/news/${item.slug}" class="btn btn-outline">Read More &rarr;</a>
-        </article>
-      `).join("");
-    });
-  }
-
-  // --- MODE B: Load One Article ---
-  function loadSingleArticle(slug) {
-    container.innerHTML = "<p class='muted'>Loading article...</p>";
-    
-    const query = `
-      {
-        newsItemBy(slug: "${slug}") {
-          title
-          content
-          date
-        }
-      }
-    `;
-
-    fetchData(query).then(data => {
-      const post = data.newsItemBy;
-      
-      if (!post) {
-        container.innerHTML = "<h2>Article not found</h2><a href='/news/' class='btn'>Back to News</a>";
-        return;
-      }
-
-      // Render Single View
-      // We hide the "Local News" header via CSS or just overwrite the container
-      document.querySelector('h2').style.display = 'none'; // Hide the "Local News" title
-      document.querySelector('.content > p').style.display = 'none'; // Hide the subtitle
-
-      container.className = "article-container";
-      container.innerHTML = `
-        <a href="/news/" class="kicker" style="display:inline-block; margin-bottom:1rem;">&larr; Back to News</a>
-        <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: white;">${post.title}</h1>
-        <div class="meta" style="color:var(--text-muted); margin-bottom: 2rem;">
-          Published: ${new Date(post.date).toLocaleDateString()}
-        </div>
-        <div class="article-body" style="font-size: 1.1rem; line-height: 1.8; max-width: 800px;">
-          ${post.content}
-        </div>
       `;
-    });
-  }
 
-  // --- HELPER: Fetch Data ---
-  async function fetchData(query) {
-    try {
-      const res = await fetch(ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query })
+      fetchData(query).then(data => {
+        // Safety check if API returns null
+        if (!data || !data.newsItems) {
+          container.innerHTML = "<p class='error'>Unable to connect to news database.</p>";
+          return;
+        }
+
+        const items = data.newsItems.nodes;
+        if (!items.length) {
+          container.innerHTML = "<p class='muted'>No news articles found.</p>";
+          return;
+        }
+        
+        // Render Grid
+        container.className = "grid"; 
+        container.innerHTML = items.map(item => `
+          <article class="card news-card">
+            <span class="kicker">${new Date(item.date).toLocaleDateString()}</span>
+            <h3><a href="/news/${item.slug}">${item.title}</a></h3>
+            <p>${item.excerpt || ''}</p>
+            <a href="/news/${item.slug}" class="btn btn-outline">Read More &rarr;</a>
+          </article>
+        `).join("");
       });
-      const json = await res.json();
-      return json.data;
-    } catch (e) {
-      console.error(e);
-      container.innerHTML = "<p class='error'>Error loading content.</p>";
     }
-  }
-</script>
-    <script src="/assets/js/script.js"></script>
+
+    // --- FUNCTION: Load Single Article ---
+    function loadSingleArticle(slug) {
+      container.innerHTML = "<p class='muted'>Fetching article...</p>";
+      
+      const query = `
+        {
+          newsItemBy(slug: "${slug}") {
+            title
+            content
+            date
+          }
+        }
+      `;
+
+      fetchData(query).then(data => {
+        const post = data ? data.newsItemBy : null;
+        
+        if (!post) {
+          container.innerHTML = "<h2>Article not found</h2><a href='/news/' class='btn'>Back to News</a>";
+          return;
+        }
+
+        // Hide the standard page headers for single view
+        document.querySelector('h2.brand').style.display = 'none';
+        document.querySelector('main > div > p').style.display = 'none';
+
+        container.className = "article-container";
+        container.innerHTML = `
+          <a href="/news/" class="kicker" style="display:inline-block; margin-bottom:1rem; cursor:pointer;">&larr; Back to News</a>
+          <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: white; line-height: 1.2;">${post.title}</h1>
+          <div class="meta" style="color:var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem;">
+            Published: ${new Date(post.date).toLocaleDateString()}
+          </div>
+          <div class="article-body" style="font-size: 1.1rem; line-height: 1.8; max-width: 800px; color: #e2e8f0;">
+            ${post.content}
+          </div>
+        `;
+      });
+    }
+
+    // --- HELPER: Fetcher ---
+    async function fetchData(query) {
+      try {
+        const res = await fetch(ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query })
+        });
+        const json = await res.json();
+        if (json.errors) {
+          console.error("GraphQL Errors:", json.errors);
+          throw new Error("API returned errors");
+        }
+        return json.data;
+      } catch (e) {
+        console.error("Fetch Error:", e);
+        container.innerHTML = `<p class='error'>Error loading content. Please try again later.</p>`;
+      }
+    }
+  </script>
 </body>
 </html>
