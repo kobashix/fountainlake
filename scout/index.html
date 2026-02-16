@@ -5,15 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>News Scout | Fountain Lake Network</title>
   <link rel="stylesheet" href="/assets/css/style.css" />
+  <style>
+    /* Custom style for the scout grid */
+    .scout-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-top: 4px solid var(--cobra-gold);
+    }
+    .scout-img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      background: #1e293b;
+      display: none; /* Hidden by default, shown if url exists */
+    }
+    .scout-img.has-image {
+      display: block;
+    }
+  </style>
 </head>
 <body>
+  <script src="/assets/js/script.js"></script>
+
   <main class="container">
-    <div style="margin-top: 2rem; display:flex; justify-content:space-between; align-items:center;">
+    <div style="margin-top: 2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
       <div>
         <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">The Scout 🕵️‍♂️</h2>
-        <p style="color: var(--text-muted);">Scanning the web for "Fountain Lake, Arkansas"</p>
+        <p style="color: var(--text-muted);">Monitoring "Fountain Lake, Arkansas" (Last 7 Days)</p>
       </div>
-      <a href="/" class="btn btn-outline">Back Home</a>
+      <button onclick="loadFeed()" class="btn btn-outline">🔄 Refresh</button>
     </div>
 
     <div id="feed" class="grid" style="margin-top: 2rem;">
@@ -22,30 +43,65 @@
   </main>
 
   <script>
-    fetch('/api/scout')
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById('feed');
-        if (!data.news || data.news.length === 0) {
-          container.innerHTML = '<p class="muted">No recent news found.</p>';
-          return;
-        }
+    // YOUR WORDPRESS URL (Update this if it's different)
+    const WP_ADMIN_URL = "https://cms.fountainlake.net/wp-admin/post-new.php";
 
-        container.innerHTML = data.news.map(item => `
-          <div class="card" style="border-left: 4px solid var(--cobra-gold);">
-            <div class="kicker" style="color: #94a3b8;">${item.source} • ${item.date}</div>
-            <h3 style="margin: 0.5rem 0;">
-              <a href="${item.link}" target="_blank" style="text-decoration:none; color:white;">
-                ${item.title}
-              </a>
-            </h3>
-            <a href="${item.link}" target="_blank" style="font-size:0.9rem; color:var(--cobra-gold);">Open Article &rarr;</a>
-          </div>
-        `).join('');
-      })
-      .catch(err => {
-        document.getElementById('feed').innerHTML = '<p class="error">Scout failed to report in.</p>';
-      });
+    function loadFeed() {
+      const container = document.getElementById('feed');
+      container.innerHTML = '<p class="muted">Scanning web...</p>';
+
+      fetch('/api/scout')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.news || data.news.length === 0) {
+            container.innerHTML = `
+              <div class="card" style="grid-column: 1 / -1; text-align: center;">
+                <p>No news found in the last 7 days.</p>
+                <small>The web is quiet today.</small>
+              </div>`;
+            return;
+          }
+
+          container.innerHTML = data.news.map(item => {
+            // Create the WordPress Draft Link
+            // We encode the title and content so it passes safely in the URL
+            const wpTitle = encodeURIComponent(item.title);
+            const wpContent = encodeURIComponent(
+              `\n<p>Source: <a href="${item.link}">${item.source}</a></p>\n\n\n\n<figure class="wp-block-embed is-type-wp-embed is-provider-${item.source} wp-block-embed-${item.source}"><div class="wp-block-embed__wrapper">\n${item.link}\n</div></figure>\n`
+            );
+            const draftLink = `${WP_ADMIN_URL}?post_title=${wpTitle}&content=${wpContent}`;
+
+            const imgClass = item.image ? 'has-image' : '';
+            const imgTag = item.image ? `<img src="${item.image}" class="scout-img ${imgClass}">` : '';
+
+            return `
+              <div class="card scout-card">
+                <div>
+                  ${imgTag}
+                  <div class="kicker" style="color: #94a3b8; margin-top:1rem;">${item.source} • ${item.date}</div>
+                  <h3 style="margin: 0.5rem 0; font-size: 1.1rem;">
+                    <a href="${item.link}" target="_blank" style="text-decoration:none; color:white;">
+                      ${item.title}
+                    </a>
+                  </h3>
+                </div>
+                
+                <div style="margin-top: 1.5rem; display:flex; gap: 0.5rem;">
+                  <a href="${item.link}" target="_blank" class="btn btn-outline" style="flex:1; text-align:center; font-size:0.8rem;">Read</a>
+                  <a href="${draftLink}" target="_blank" class="btn" style="flex:1; text-align:center; font-size:0.8rem; background:var(--cobra-gold); color:black; border:none;">Draft Post &rarr;</a>
+                </div>
+              </div>
+            `;
+          }).join('');
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById('feed').innerHTML = '<p class="error">Scout failed. Check console.</p>';
+        });
+    }
+
+    // Load on start
+    loadFeed();
   </script>
 </body>
 </html>
