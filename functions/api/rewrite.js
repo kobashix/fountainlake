@@ -17,14 +17,15 @@ export async function onRequest(context) {
     if (!response.ok) throw new Error(`Failed to fetch article: ${response.status}`);
     
     let html = await response.text();
-    // Simple cleanup to save tokens
+    
+    // Simple cleanup
     let text = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gmi, "")
                    .replace(/<style[^>]*>([\s\S]*?)<\/style>/gmi, "")
                    .replace(/<[^>]+>/g, "\n")
                    .replace(/\s+/g, " ")
                    .substring(0, 7000);
 
-    // 2. Define the prompt
+    // 2. Define the payload
     const payload = {
       contents: [{
         parts: [{
@@ -42,21 +43,19 @@ export async function onRequest(context) {
       ]
     };
 
-    // 3. THE "SELF-HEALING" LOOP
-    // We will try these models in order.
+    // 3. TARGET YOUR SPECIFIC MODELS
+    // These are the exact models your error message confirmed you have.
     const modelsToTry = [
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-001",
-      "gemini-1.5-pro",
-      "gemini-1.5-pro-001",
-      "gemini-1.0-pro"
+      "gemini-2.5-flash",
+      "gemini-2.0-flash",
+      "gemini-flash-latest"
     ];
 
     let lastError = "";
 
     for (const model of modelsToTry) {
       try {
-        // Use v1beta because it has broader model support
+        // We use the standard 'v1beta' endpoint which supports these newer models
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         
         const run = await fetch(endpoint, {
@@ -67,14 +66,13 @@ export async function onRequest(context) {
 
         const data = await run.json();
 
-        // If successful, return immediately
+        // Check for success
         if (data.candidates && data.candidates.length > 0) {
           return new Response(JSON.stringify({ content: data.candidates[0].content.parts[0].text }), {
             headers: { "Content-Type": "application/json" }
           });
         }
         
-        // Use error message to decide if we should try next model
         if (data.error) {
             console.log(`Failed ${model}: ${data.error.message}`);
             lastError = data.error.message;
@@ -85,18 +83,7 @@ export async function onRequest(context) {
       }
     }
 
-    // 4. EMERGENCY DIAGNOSTIC
-    // If we get here, NOTHING worked. Let's ask Google what models ARE available.
-    const listModelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-    const listReq = await fetch(listModelsUrl);
-    const listData = await listReq.json();
-
-    if (listData.models) {
-        const availableNames = listData.models.map(m => m.name).join(", ");
-        throw new Error(`All attempts failed. Your key has access to these models: [${availableNames}]. Error: ${lastError}`);
-    }
-
-    throw new Error(`Gemini API Error: ${lastError}`);
+    throw new Error(`All models failed. Last error: ${lastError}`);
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
