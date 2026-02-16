@@ -1,7 +1,7 @@
 export async function onRequest(context) {
   const QUERY = "Fountain Lake Arkansas";
-  // We keep 'when:7d' to guide Google
-  const RSS_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(QUERY + " when:7d")}&hl=en-US&gl=US&ceid=US:en`;
+  // We keep 'when:30d' to guide Google to give us a month of news
+  const RSS_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(QUERY + " when:30d")}&hl=en-US&gl=US&ceid=US:en`;
 
   try {
     const response = await fetch(RSS_URL, {
@@ -13,20 +13,21 @@ export async function onRequest(context) {
     const xml = await response.text();
     const items = parseRSS(xml);
     
-    // --- STRICT DATE FILTER ---
+    // --- UPDATED DATE FILTER: 30 DAYS ---
     const now = new Date();
-    // 7 days in milliseconds
-    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    // 30 days in milliseconds (30 * 24 * 60 * 60 * 1000)
+    const thirtyDaysAgo = new Date(now.getTime() - (2592000000));
     
     const freshNews = items.filter(item => {
       const itemDate = new Date(item.date);
-      return itemDate >= sevenDaysAgo;
+      // Keep item if it's newer than 30 days
+      return itemDate >= thirtyDaysAgo;
     });
 
     return new Response(JSON.stringify({ news: freshNews }), {
       headers: { 
         "Content-Type": "application/json", 
-        "Cache-Control": "no-store" // DISABLED CACHE so you see updates instantly
+        "Cache-Control": "no-store" 
       }
     });
 
