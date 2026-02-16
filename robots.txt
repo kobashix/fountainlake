@@ -1,1 +1,2 @@
 Sitemap: https://fountainlake.net/sitemap.xml
+Disallow: /scout

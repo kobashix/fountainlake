@@ -1,2 +1,4 @@
 # Global catch-all for the rest of the site (Business, Events, etc.)
 /* /index.html  200
+/sitemap.xml  /api/sitemap  200
+/robots.txt  200
