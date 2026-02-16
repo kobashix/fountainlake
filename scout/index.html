@@ -84,49 +84,60 @@
     }
 
     // The Magic Function
+// The Fixed Magic Function (sends Title now)
     async function magicDraft(url, index) {
-      const btn = document.querySelector(`#card-${index} button:last-child`);
-      const originalText = btn.innerHTML;
+      const card = document.getElementById(`card-${index}`);
+      const btn = card.querySelector('.action-area button');
+      const actionArea = card.querySelector('.action-area');
       
-      // 1. Show Loading State
-      btn.innerHTML = `<div class="spinner"></div> Rewriting...`;
+      // GRAB THE TITLE from the link in the card
+      const titleLink = card.querySelector('h3 a');
+      const titleText = titleLink ? titleLink.innerText : "Local News";
+      
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<div class="spinner"></div> Writing...`;
       btn.disabled = true;
 
       try {
-        // 2. Call our Worker API
-        const res = await fetch(`/api/rewrite?url=${encodeURIComponent(url)}`);
+        // PASS TITLE AND URL
+        const apiUrl = `/api/rewrite?url=${encodeURIComponent(url)}&title=${encodeURIComponent(titleText)}`;
+        
+        const res = await fetch(apiUrl);
         const data = await res.json();
         
         if (data.error) throw new Error(data.error);
 
-        // 3. Parse the result (Gemini returns Markdown/HTML usually)
-        // We assume the first line is the Headline, the rest is body
+        // Prepare WordPress Data
         let content = data.content;
-        let title = "New Article";
+        let wpTitle = titleText; // Default to original title
         
-        // Simple trick: extract first line as title if it looks like one
-        const lines = content.split('\n');
-        if (lines[0].length < 100) {
-            title = lines[0].replace(/#|\*/g, '').trim(); // Remove Markdown headings
-            content = lines.slice(1).join('\n');
+        // Try to extract new title from H1 tag if Gemini wrote one
+        const h1Match = content.match(/<h1>(.*?)<\/h1>/);
+        if (h1Match) {
+            wpTitle = h1Match[1];
+            // Remove the H1 from content so it doesn't duplicate in the body
+            content = content.replace(/<h1>.*?<\/h1>/, "");
         }
 
-        // 4. Open WordPress with the new content
-        const wpTitle = encodeURIComponent(title);
-        const wpContent = encodeURIComponent(content);
+        const finalUrl = `${WP_ADMIN_URL}?post_title=${encodeURIComponent(wpTitle)}&content=${encodeURIComponent(content)}`;
         
-        window.open(`${WP_ADMIN_URL}?post_title=${wpTitle}&content=${wpContent}`, '_blank');
-        
-        btn.innerHTML = "✅ Drafted!";
+        // Success Button
+        btn.remove();
+        const successLink = document.createElement('a');
+        successLink.href = finalUrl;
+        successLink.target = "_blank";
+        successLink.className = "btn";
+        successLink.style.cssText = "text-align:center; font-size:0.8rem; background: #22c55e; color:black; border:none; font-weight:bold; text-decoration:none; display:flex; align-items:center; justify-content:center;";
+        successLink.innerHTML = "🚀 Open Draft";
+        actionArea.appendChild(successLink);
+
       } catch (err) {
         console.error(err);
         btn.innerHTML = "❌ Error";
         alert("Could not rewrite: " + err.message);
-      } finally {
         setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
       }
     }
-
     loadFeed();
   </script>
 </body>
