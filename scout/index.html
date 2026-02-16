@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>News Scout | Fountain Lake Network</title>
+  <title>News Scout Pro | Fountain Lake Network</title>
   <link rel="stylesheet" href="/assets/css/style.css" />
   <style>
-    /* Custom style for the scout grid */
     .scout-card {
       display: flex;
       flex-direction: column;
@@ -14,25 +13,27 @@
       border-top: 4px solid var(--cobra-gold);
     }
     .scout-img {
-      width: 100%;
-      height: 150px;
-      object-fit: cover;
-      background: #1e293b;
-      display: none; /* Hidden by default, shown if url exists */
+      width: 100%; height: 150px; object-fit: cover;
+      background: #1e293b; display: none;
     }
-    .scout-img.has-image {
-      display: block;
+    .scout-img.has-image { display: block; }
+    
+    /* Loading Spinner */
+    .spinner {
+      display: inline-block; width: 1rem; height: 1rem;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%; border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite; margin-right: 5px;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <script src="/assets/js/script.js"></script>
-
   <main class="container">
-    <div style="margin-top: 2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div style="margin-top: 2rem; display:flex; justify-content:space-between; align-items:center;">
       <div>
-        <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">The Scout 🕵️‍♂️</h2>
-        <p style="color: var(--text-muted);">Monitoring "Fountain Lake, Arkansas" (Last 7 Days)</p>
+        <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Scout Pro 🕵️‍♂️</h2>
+        <p style="color: var(--text-muted);">AI-Powered News Monitor</p>
       </div>
       <button onclick="loadFeed()" class="btn btn-outline">🔄 Refresh</button>
     </div>
@@ -43,7 +44,6 @@
   </main>
 
   <script>
-    // YOUR WORDPRESS URL (Update this if it's different)
     const WP_ADMIN_URL = "https://cms.fountainlake.net/wp-admin/post-new.php";
 
     function loadFeed() {
@@ -54,53 +54,79 @@
         .then(res => res.json())
         .then(data => {
           if (!data.news || data.news.length === 0) {
-            container.innerHTML = `
-              <div class="card" style="grid-column: 1 / -1; text-align: center;">
-                <p>No news found in the last 7 days.</p>
-                <small>The web is quiet today.</small>
-              </div>`;
-            return;
+            container.innerHTML = '<p>No news found.</p>'; return;
           }
 
-          container.innerHTML = data.news.map(item => {
-            // Create the WordPress Draft Link
-            // We encode the title and content so it passes safely in the URL
-            const wpTitle = encodeURIComponent(item.title);
-            const wpContent = encodeURIComponent(
-              `\n<p>Source: <a href="${item.link}">${item.source}</a></p>\n\n\n\n<figure class="wp-block-embed is-type-wp-embed is-provider-${item.source} wp-block-embed-${item.source}"><div class="wp-block-embed__wrapper">\n${item.link}\n</div></figure>\n`
-            );
-            const draftLink = `${WP_ADMIN_URL}?post_title=${wpTitle}&content=${wpContent}`;
-
+          container.innerHTML = data.news.map((item, index) => {
             const imgClass = item.image ? 'has-image' : '';
             const imgTag = item.image ? `<img src="${item.image}" class="scout-img ${imgClass}">` : '';
 
             return `
-              <div class="card scout-card">
+              <div class="card scout-card" id="card-${index}">
                 <div>
                   ${imgTag}
                   <div class="kicker" style="color: #94a3b8; margin-top:1rem;">${item.source} • ${item.date}</div>
                   <h3 style="margin: 0.5rem 0; font-size: 1.1rem;">
-                    <a href="${item.link}" target="_blank" style="text-decoration:none; color:white;">
-                      ${item.title}
-                    </a>
+                    <a href="${item.link}" target="_blank" style="text-decoration:none; color:white;">${item.title}</a>
                   </h3>
                 </div>
                 
-                <div style="margin-top: 1.5rem; display:flex; gap: 0.5rem;">
-                  <a href="${item.link}" target="_blank" class="btn btn-outline" style="flex:1; text-align:center; font-size:0.8rem;">Read</a>
-                  <a href="${draftLink}" target="_blank" class="btn" style="flex:1; text-align:center; font-size:0.8rem; background:var(--cobra-gold); color:black; border:none;">Draft Post &rarr;</a>
+                <div style="margin-top: 1.5rem; display:grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                  <a href="${item.link}" target="_blank" class="btn btn-outline" style="text-align:center; font-size:0.8rem;">Original</a>
+                  <button onclick="magicDraft('${item.link}', ${index})" class="btn" style="text-align:center; font-size:0.8rem; background: linear-gradient(45deg, #7c3aed, #db2777); color:white; border:none;">
+                    ✨ Magic Draft
+                  </button>
                 </div>
               </div>
             `;
           }).join('');
-        })
-        .catch(err => {
-          console.error(err);
-          document.getElementById('feed').innerHTML = '<p class="error">Scout failed. Check console.</p>';
         });
     }
 
-    // Load on start
+    // The Magic Function
+    async function magicDraft(url, index) {
+      const btn = document.querySelector(`#card-${index} button:last-child`);
+      const originalText = btn.innerHTML;
+      
+      // 1. Show Loading State
+      btn.innerHTML = `<div class="spinner"></div> Rewriting...`;
+      btn.disabled = true;
+
+      try {
+        // 2. Call our Worker API
+        const res = await fetch(`/api/rewrite?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        
+        if (data.error) throw new Error(data.error);
+
+        // 3. Parse the result (Gemini returns Markdown/HTML usually)
+        // We assume the first line is the Headline, the rest is body
+        let content = data.content;
+        let title = "New Article";
+        
+        // Simple trick: extract first line as title if it looks like one
+        const lines = content.split('\n');
+        if (lines[0].length < 100) {
+            title = lines[0].replace(/#|\*/g, '').trim(); // Remove Markdown headings
+            content = lines.slice(1).join('\n');
+        }
+
+        // 4. Open WordPress with the new content
+        const wpTitle = encodeURIComponent(title);
+        const wpContent = encodeURIComponent(content);
+        
+        window.open(`${WP_ADMIN_URL}?post_title=${wpTitle}&content=${wpContent}`, '_blank');
+        
+        btn.innerHTML = "✅ Drafted!";
+      } catch (err) {
+        console.error(err);
+        btn.innerHTML = "❌ Error";
+        alert("Could not rewrite: " + err.message);
+      } finally {
+        setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+      }
+    }
+
     loadFeed();
   </script>
 </body>
