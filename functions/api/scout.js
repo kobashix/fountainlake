@@ -1,6 +1,6 @@
 export async function onRequest(context) {
   const QUERY = "Fountain Lake Arkansas";
-  // We keep 'when:7d' to try and guide Google, but we will filter manually too.
+  // We keep 'when:7d' to guide Google
   const RSS_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(QUERY + " when:7d")}&hl=en-US&gl=US&ceid=US:en`;
 
   try {
@@ -13,18 +13,21 @@ export async function onRequest(context) {
     const xml = await response.text();
     const items = parseRSS(xml);
     
-    // --- NEW: STRICT DATE FILTER ---
-    // Only allow posts from the last 7 days (approx 604800000 ms)
+    // --- STRICT DATE FILTER ---
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    // 7 days in milliseconds
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
     
     const freshNews = items.filter(item => {
       const itemDate = new Date(item.date);
-      return itemDate >= oneWeekAgo;
+      return itemDate >= sevenDaysAgo;
     });
 
     return new Response(JSON.stringify({ news: freshNews }), {
-      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=1800" }
+      headers: { 
+        "Content-Type": "application/json", 
+        "Cache-Control": "no-store" // DISABLED CACHE so you see updates instantly
+      }
     });
 
   } catch (err) {
@@ -49,13 +52,14 @@ function parseRSS(xml) {
     const cleanTitle = rawTitle.split(" - " + source)[0]; 
     const link = (content.match(linkRegex) || [])[1] || "#";
     const pubDate = (content.match(dateRegex) || [])[1] || "";
+    
     const description = (content.match(/<description>([\s\S]*?)<\/description>/) || [])[1] || "";
     const imgMatch = description.match(imgRegex);
 
     items.push({
       title: decodeHTMLEntities(cleanTitle),
       link: link,
-      date: pubDate, // Keep as string for now, converted in filter above
+      date: pubDate, 
       source: source,
       image: imgMatch ? imgMatch[1] : null
     });
