@@ -11,6 +11,7 @@
       flex-direction: column;
       justify-content: space-between;
       border-top: 4px solid var(--cobra-gold);
+      position: relative;
     }
     .scout-img {
       width: 100%; height: 150px; object-fit: cover;
@@ -26,6 +27,13 @@
       animation: spin 1s ease-in-out infinite; margin-right: 5px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Success Message */
+    .success-box {
+      background: #22c55e; color: black; padding: 0.5rem;
+      border-radius: 4px; text-align: center; font-weight: bold;
+      margin-top: 0.5rem; display: none;
+    }
   </style>
 </head>
 <body>
@@ -44,6 +52,7 @@
   </main>
 
   <script>
+    // YOUR WORDPRESS URL
     const WP_ADMIN_URL = "https://cms.fountainlake.net/wp-admin/post-new.php";
 
     function loadFeed() {
@@ -61,8 +70,12 @@
             const imgClass = item.image ? 'has-image' : '';
             const imgTag = item.image ? `<img src="${item.image}" class="scout-img ${imgClass}">` : '';
 
+            // SAFE TITLE ENCODING
+            // We store the title in a data attribute to avoid quote escaping issues
+            const safeTitle = item.title.replace(/"/g, '&quot;');
+
             return `
-              <div class="card scout-card" id="card-${index}">
+              <div class="card scout-card" id="card-${index}" data-title="${safeTitle}" data-url="${item.link}">
                 <div>
                   ${imgTag}
                   <div class="kicker" style="color: #94a3b8; margin-top:1rem;">${item.source} • ${item.date}</div>
@@ -71,73 +84,86 @@
                   </h3>
                 </div>
                 
-                <div style="margin-top: 1.5rem; display:grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <div class="action-area" style="margin-top: 1.5rem; display:grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                   <a href="${item.link}" target="_blank" class="btn btn-outline" style="text-align:center; font-size:0.8rem;">Original</a>
-                  <button onclick="magicDraft('${item.link}', ${index})" class="btn" style="text-align:center; font-size:0.8rem; background: linear-gradient(45deg, #7c3aed, #db2777); color:white; border:none;">
+                  <button onclick="magicDraft(${index})" class="btn" style="text-align:center; font-size:0.8rem; background: linear-gradient(45deg, #7c3aed, #db2777); color:white; border:none; cursor:pointer;">
                     ✨ Magic Draft
                   </button>
                 </div>
+                <div class="error-msg" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display:none;"></div>
               </div>
             `;
           }).join('');
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('feed').innerHTML = `<p style="color:red">Error loading feed: ${err.message}</p>`;
         });
     }
 
-    // The Magic Function
-// The Fixed Magic Function (sends Title now)
-    async function magicDraft(url, index) {
+    async function magicDraft(index) {
       const card = document.getElementById(`card-${index}`);
-      const btn = card.querySelector('.action-area button');
-      const actionArea = card.querySelector('.action-area');
+      const btn = card.querySelector('button');
+      const errorMsg = card.querySelector('.error-msg');
       
-      // GRAB THE TITLE from the link in the card
-      const titleLink = card.querySelector('h3 a');
-      const titleText = titleLink ? titleLink.innerText : "Local News";
-      
+      // GET DATA FROM ATTRIBUTES (Safer than parsing HTML)
+      const url = card.dataset.url;
+      const title = card.dataset.title;
+
       const originalText = btn.innerHTML;
       btn.innerHTML = `<div class="spinner"></div> Writing...`;
       btn.disabled = true;
+      errorMsg.style.display = 'none';
 
       try {
-        // PASS TITLE AND URL
-        const apiUrl = `/api/rewrite?url=${encodeURIComponent(url)}&title=${encodeURIComponent(titleText)}`;
-        
+        // CALL API
+        const apiUrl = `/api/rewrite?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
         const res = await fetch(apiUrl);
         const data = await res.json();
         
         if (data.error) throw new Error(data.error);
 
-        // Prepare WordPress Data
-        let content = data.content;
-        let wpTitle = titleText; // Default to original title
-        
-        // Try to extract new title from H1 tag if Gemini wrote one
-        const h1Match = content.match(/<h1>(.*?)<\/h1>/);
-        if (h1Match) {
-            wpTitle = h1Match[1];
-            // Remove the H1 from content so it doesn't duplicate in the body
-            content = content.replace(/<h1>.*?<\/h1>/, "");
+        // PREPARE WORDPRESS LINK
+        let content = data.content || "";
+        // Clean up H1 if present
+        let wpTitle = title;
+        if (content.includes("<h1>")) {
+            const match = content.match(/<h1>(.*?)<\/h1>/);
+            if (match) {
+                wpTitle = match[1];
+                content = content.replace(/<h1>.*?<\/h1>/, "");
+            }
         }
 
         const finalUrl = `${WP_ADMIN_URL}?post_title=${encodeURIComponent(wpTitle)}&content=${encodeURIComponent(content)}`;
-        
-        // Success Button
+
+        // SHOW SUCCESS BUTTON
         btn.remove();
+        const actionArea = card.querySelector('.action-area');
+        
         const successLink = document.createElement('a');
         successLink.href = finalUrl;
         successLink.target = "_blank";
         successLink.className = "btn";
-        successLink.style.cssText = "text-align:center; font-size:0.8rem; background: #22c55e; color:black; border:none; font-weight:bold; text-decoration:none; display:flex; align-items:center; justify-content:center;";
+        successLink.style.cssText = "text-align:center; font-size:0.8rem; background: #22c55e; color:black; border:none; font-weight:bold; text-decoration:none; display:flex; align-items:center; justify-content:center; grid-column: 2;";
         successLink.innerHTML = "🚀 Open Draft";
+        
         actionArea.appendChild(successLink);
 
       } catch (err) {
         console.error(err);
-        btn.innerHTML = "❌ Error";
-        alert("Could not rewrite: " + err.message);
-        setTimeout(() => { btn.innerHTML = originalText; btn.disabled = false; }, 3000);
+        btn.innerHTML = "❌ Failed";
+        errorMsg.innerText = err.message;
+        errorMsg.style.display = 'block';
+        
+        // Reset button
+        setTimeout(() => { 
+            btn.innerHTML = originalText; 
+            btn.disabled = false; 
+        }, 3000);
       }
     }
+
     loadFeed();
   </script>
 </body>
