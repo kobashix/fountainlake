@@ -18,7 +18,7 @@ export async function onRequest(context) {
 
     if (!env.GEMINI_API_KEY) throw new Error("Missing GEMINI_API_KEY");
 
-    // 3. Prepare Gemini Payload with SAFETY DISABLED
+    // 3. Prepare Gemini Payload (Switched to gemini-pro)
     const geminiPayload = {
       contents: [{
         parts: [{
@@ -28,7 +28,6 @@ export async function onRequest(context) {
           Source: ${text}`
         }]
       }],
-      // VITAL: This tells Gemini "Do not block news about accidents/crime"
       safetySettings: [
         { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
         { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -37,7 +36,8 @@ export async function onRequest(context) {
       ]
     };
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
+    // UPDATED URL: Using 'gemini-pro'
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${env.GEMINI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(geminiPayload)
@@ -45,14 +45,11 @@ export async function onRequest(context) {
 
     const data = await geminiResponse.json();
 
-    // 4. Debugging & Error Handling
     if (data.error) throw new Error("Gemini API Error: " + data.error.message);
     
-    // Check if candidates exist (this is where your previous error happened)
     if (!data.candidates || data.candidates.length === 0) {
-        // If it was blocked, 'promptFeedback' usually explains why
         const reason = data.promptFeedback?.blockReason || "Unknown Block";
-        throw new Error(`Gemini refused to rewrite this article. Reason: ${reason}`);
+        throw new Error(`Gemini refused to rewrite. Reason: ${reason}`);
     }
 
     const rewritten = data.candidates[0].content.parts[0].text;
