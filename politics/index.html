@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Politics & Elections | Fountain Lake Network</title>
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+<body>
+  <script src="/assets/js/script.js"></script>
+
+  <main class="container">
+    <div style="margin-top: 2rem;">
+      <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Politics & Elections</h2>
+      <p style="color: var(--text-muted); max-width: 600px; margin-bottom: 2rem;">
+        Unbiased information on local candidates, ballot measures, and voting schedules.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 3rem;">
+      <a href="https://www.voterview.ar-nova.org/VoterView" target="_blank" class="card" style="text-align: center; text-decoration: none; border: 1px solid var(--border); background: var(--bg-dark);">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗳️</div>
+        <strong style="color: white; display: block;">Sample Ballot</strong>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">See exactly what you're voting on</span>
+      </a>
+      
+      <a href="https://www.voterview.ar-nova.org/VoterView" target="_blank" class="card" style="text-align: center; text-decoration: none; border: 1px solid var(--border); background: var(--bg-dark);">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📍</div>
+        <strong style="color: white; display: block;">Polling Place</strong>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Find where to vote</span>
+      </a>
+
+      <a href="https://www.sos.arkansas.gov/elections/voter-information" target="_blank" class="card" style="text-align: center; text-decoration: none; border: 1px solid var(--border); background: var(--bg-dark);">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📝</div>
+        <strong style="color: white; display: block;">Registration</strong>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Check your voter status</span>
+      </a>
+    </div>
+
+    <h3 class="kicker" style="margin-bottom: 1rem; color: var(--cobra-gold);">On The Ballot</h3>
+
+    <div id="politics-feed" class="grid">
+      <p class="muted">Loading election info...</p>
+    </div>
+  </main>
+
+  <script>
+    const ENDPOINT = "https://cms.fountainlake.net/graphql";
+    const container = document.getElementById("politics-feed");
+
+    // Router Logic (for individual articles)
+    const path = window.location.pathname.replace(/\/$/, ""); 
+    const parts = path.split("/");
+    const slug = parts.length > 2 && parts[parts.length - 1] !== "politics" ? parts[parts.length - 1] : null;
+
+    if (slug) {
+      loadSinglePost(slug);
+    } else {
+      loadFeed();
+    }
+
+    // --- 1. LOAD FEED ---
+    function loadFeed() {
+      // Query: Fetch posts with category 'Politics'
+      const query = `
+        {
+          newsItems(first: 20, where: { categoryName: "Politics" }) {
+            nodes {
+              title
+              slug
+              date
+              excerpt
+              featuredImage {
+                node {
+                  sourceUrl
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const posts = data.data?.newsItems?.nodes || [];
+
+        if (!posts.length) {
+          container.innerHTML = `
+            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+              <p style="color: var(--text-muted);">No election updates yet.</p>
+              <small style="color: #666;">(Create posts in WordPress with category "Politics")</small>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = posts.map(post => {
+          const date = new Date(post.date).toLocaleDateString();
+          const img = post.featuredImage?.node?.sourceUrl 
+            ? `<img src="${post.featuredImage.node.sourceUrl}" alt="" style="width:100%; height:200px; object-fit:cover; border-radius:4px 4px 0 0; display:block;">` 
+            : '';
+
+          return `
+            <article class="card news-card" style="padding:0; overflow:hidden;">
+              ${img}
+              <div style="padding: 1.5rem;">
+                <div class="kicker">${date}</div>
+                <h3 style="margin: 0.5rem 0 1rem;"><a href="/politics/${post.slug}">${post.title}</a></h3>
+                <div style="color: #cbd5e1; font-size: 0.95rem;">${post.excerpt}</div>
+                <a href="/politics/${post.slug}" class="btn btn-outline" style="margin-top: 1rem; width:100%; text-align:center;">Read Breakdown</a>
+              </div>
+            </article>
+          `;
+        }).join("");
+      });
+    }
+
+    // --- 2. LOAD SINGLE POST ---
+    function loadSinglePost(slug) {
+      container.className = "article-container"; 
+      container.innerHTML = "<p class='muted'>Loading article...</p>";
+
+      const query = `
+        {
+          newsItemBy(slug: "${slug}") {
+            title
+            content
+            date
+            featuredImage {
+              node {
+                sourceUrl
+              }
+            }
+          }
+        }
+      `;
+
+      fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const post = data.data?.newsItemBy;
+        if (!post) {
+          container.innerHTML = "<h2>Article not found</h2><a href='/politics/' class='btn'>Back</a>";
+          return;
+        }
+
+        const date = new Date(post.date).toLocaleDateString();
+        const img = post.featuredImage?.node?.sourceUrl 
+          ? `<img src="${post.featuredImage.node.sourceUrl}" style="width:100%; max-height:400px; object-fit:cover; border-radius:8px; margin-bottom:2rem;">` 
+          : '';
+
+        container.innerHTML = `
+          <a href="/politics/" class="kicker" style="cursor:pointer; display:inline-block; margin-bottom:1rem;">&larr; Back to Politics</a>
+          ${img}
+          <div class="kicker">${date}</div>
+          <h1 style="font-size: 2.5rem; color: white; margin-bottom: 1.5rem; line-height: 1.1;">${post.title}</h1>
+          <div class="article-content" style="font-size: 1.1rem; line-height: 1.8; color: #e2e8f0;">
+            ${post.content}
+          </div>
+        `;
+      });
+    }
+  </script>
+</body>
+</html>

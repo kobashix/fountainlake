@@ -364,6 +364,7 @@ const navHTML = `
         <li><a href="/school/" class="nav-link">School</a></li>
         <li><a href="/events/" class="nav-link">Events</a></li>
         <li><a href="/business/" class="nav-link">Business</a></li>
+        <li><a href="/politics/" class="nav-link">Politics</a></li>
       </ul>
     </nav>
   </div>
