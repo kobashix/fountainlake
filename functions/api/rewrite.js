@@ -6,7 +6,7 @@ export async function onRequest(context) {
   if (!articleUrl) return new Response(JSON.stringify({ error: "Missing URL" }), { status: 400 });
 
   if (!env.GEMINI_API_KEY) {
-    return new Response(JSON.stringify({ error: "Missing GEMINI_API_KEY in Cloudflare settings." }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Missing GEMINI_API_KEY" }), { status: 500 });
   }
 
   const apiKey = env.GEMINI_API_KEY.trim();
@@ -29,10 +29,18 @@ export async function onRequest(context) {
     const payload = {
       contents: [{
         parts: [{
-          text: `Rewrite this into a local news article HTML (use <h2>, <p>). 
-          Headline: Catchy & Local. 
-          Context: Fountain Lake, AR. 
-          Source: ${text}`
+          // STRICT PROMPT: Forces clean content only
+          text: `You are a helper for a WordPress Editor. 
+          Rewrite the text below into a Local News Article.
+          
+          RULES:
+          1. Output ONLY the HTML content tags (<h2>, <p>, <ul>, <li>).
+          2. Do NOT use <html>, <head>, <body>, or <style> tags.
+          3. Do NOT wrap the output in markdown code blocks (like \`\`\`html).
+          4. HEADLINE: Write a catchy headline as the first line (wrapped in <h1>).
+          5. CREDIT: End with a <p>Source: [Original Source Name]</p>
+          
+          SOURCE TEXT: ${text}`
         }]
       }],
       safetySettings: [
@@ -44,7 +52,6 @@ export async function onRequest(context) {
     };
 
     // 3. TARGET YOUR SPECIFIC MODELS
-    // These are the exact models your error message confirmed you have.
     const modelsToTry = [
       "gemini-2.5-flash",
       "gemini-2.0-flash",
@@ -55,7 +62,6 @@ export async function onRequest(context) {
 
     for (const model of modelsToTry) {
       try {
-        // We use the standard 'v1beta' endpoint which supports these newer models
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         
         const run = await fetch(endpoint, {
@@ -66,17 +72,18 @@ export async function onRequest(context) {
 
         const data = await run.json();
 
-        // Check for success
         if (data.candidates && data.candidates.length > 0) {
-          return new Response(JSON.stringify({ content: data.candidates[0].content.parts[0].text }), {
+          let rawContent = data.candidates[0].content.parts[0].text;
+          
+          // CRITICAL FIX: Strip Markdown Code Blocks if Gemini ignores the rules
+          let cleanContent = cleanGeminiOutput(rawContent);
+
+          return new Response(JSON.stringify({ content: cleanContent }), {
             headers: { "Content-Type": "application/json" }
           });
         }
         
-        if (data.error) {
-            console.log(`Failed ${model}: ${data.error.message}`);
-            lastError = data.error.message;
-        }
+        if (data.error) lastError = data.error.message;
 
       } catch (e) {
         lastError = e.message;
@@ -88,4 +95,20 @@ export async function onRequest(context) {
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
+}
+
+// HELPER: Removes ```html and ``` wrappers
+function cleanGeminiOutput(text) {
+  // Remove starting ```html or ```
+  text = text.replace(/^```(html)?/i, "");
+  // Remove ending ```
+  text = text.replace(/```$/, "");
+  // Remove <!DOCTYPE> or <html> tags if they snuck in
+  text = text.replace(/<!DOCTYPE html>/gi, "");
+  text = text.replace(/<html>/gi, "");
+  text = text.replace(/<\/html>/gi, "");
+  text = text.replace(/<body>/gi, "");
+  text = text.replace(/<\/body>/gi, "");
+  
+  return text.trim();
 }
