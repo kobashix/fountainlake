@@ -1,4 +1,6 @@
-# Global catch-all for the rest of the site (Business, Events, etc.)
-/* /index.html  200
+# 1. Handle specific files first
 /sitemap.xml  /api/sitemap  200
-/robots.txt  200
+/robots.txt   /robots.txt   200
+
+# 2. Global catch-all for the rest of the site (Business, Events, etc.)
+/* /index.html 200
