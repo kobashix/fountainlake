@@ -3,42 +3,38 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const articleUrl = url.searchParams.get("url");
 
-  if (!articleUrl) return new Response("Missing URL", { status: 400 });
+  if (!articleUrl) return new Response(JSON.stringify({ error: "Missing URL" }), { status: 400 });
 
   try {
-    // 1. Fetch the external article
-    const response = await fetch(articleUrl, {
-      headers: { "User-Agent": "FountainLakeBot/1.0" }
-    });
+    // 1. Fetch external article
+    const response = await fetch(articleUrl, { headers: { "User-Agent": "FountainLakeBot/1.0" } });
     const html = await response.text();
 
-    // 2. Extract the main text (Rough extraction to avoid complex parsing)
-    // We strip scripts, styles, and tags to get raw text for Gemini
+    // 2. Extract Text
     let text = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gmi, "")
                    .replace(/<style[^>]*>([\s\S]*?)<\/style>/gmi, "")
                    .replace(/<[^>]+>/g, "\n");
-    
-    // Limit text to 8000 chars to save tokens (usually enough for news)
     text = text.replace(/\s+/g, " ").substring(0, 8000);
 
-    // 3. Call Gemini API to rewrite it
+    if (!env.GEMINI_API_KEY) throw new Error("Missing GEMINI_API_KEY");
+
+    // 3. Prepare Gemini Payload with SAFETY DISABLED
     const geminiPayload = {
       contents: [{
         parts: [{
-          text: `You are a local news editor for "FountainLake.net". 
-          Rewrite the following raw text into a high-quality local news article.
-          
-          Guidelines:
-          - HEADLINE: Catchy, under 60 chars, includes "Fountain Lake" or local context if relevant.
-          - TONE: Professional, neutral, informative.
-          - FORMAT: HTML. Use <h2> for subheaders. Use <ul> for key takeaways.
-          - SEO: Include keywords like "Fountain Lake", "Garland County", "Arkansas".
-          - CONTENT: Summarize the key facts. Do not make things up. If the text is messy, extract the signal from the noise.
-          - CREDIT: End with "Source: [Original Source Name]"
-          
-          Raw Text: ${text}`
+          text: `Rewrite this into a local news article HTML (use <h2>, <p>). 
+          Headline: Catchy & Local. 
+          Context: Fountain Lake, AR. 
+          Source: ${text}`
         }]
-      }]
+      }],
+      // VITAL: This tells Gemini "Do not block news about accidents/crime"
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+      ]
     };
 
     const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
@@ -48,9 +44,19 @@ export async function onRequest(context) {
     });
 
     const data = await geminiResponse.json();
+
+    // 4. Debugging & Error Handling
+    if (data.error) throw new Error("Gemini API Error: " + data.error.message);
+    
+    // Check if candidates exist (this is where your previous error happened)
+    if (!data.candidates || data.candidates.length === 0) {
+        // If it was blocked, 'promptFeedback' usually explains why
+        const reason = data.promptFeedback?.blockReason || "Unknown Block";
+        throw new Error(`Gemini refused to rewrite this article. Reason: ${reason}`);
+    }
+
     const rewritten = data.candidates[0].content.parts[0].text;
 
-    // 4. Return the new content
     return new Response(JSON.stringify({ content: rewritten }), {
       headers: { "Content-Type": "application/json" }
     });

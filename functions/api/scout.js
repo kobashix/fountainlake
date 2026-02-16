@@ -1,27 +1,30 @@
 export async function onRequest(context) {
-  // Query: "Fountain Lake Arkansas" AND posted in the last 7 days (when:7d)
-  const QUERY = "Fountain Lake Arkansas when:7d";
-  const RSS_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(QUERY)}&hl=en-US&gl=US&ceid=US:en`;
+  const QUERY = "Fountain Lake Arkansas";
+  // We keep 'when:7d' to try and guide Google, but we will filter manually too.
+  const RSS_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(QUERY + " when:7d")}&hl=en-US&gl=US&ceid=US:en`;
 
   try {
     const response = await fetch(RSS_URL, {
-      headers: {
-        "User-Agent": "FountainLakeBot/1.0 (Cloudflare Workers)"
-      }
+      headers: { "User-Agent": "FountainLakeBot/1.0" }
     });
 
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: "Failed to fetch news" }), { status: 500 });
-    }
+    if (!response.ok) throw new Error("Google News unavailable");
 
     const xml = await response.text();
     const items = parseRSS(xml);
+    
+    // --- NEW: STRICT DATE FILTER ---
+    // Only allow posts from the last 7 days (approx 604800000 ms)
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    
+    const freshNews = items.filter(item => {
+      const itemDate = new Date(item.date);
+      return itemDate >= oneWeekAgo;
+    });
 
-    return new Response(JSON.stringify({ news: items }), {
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=1800" // Cache for 30 mins
-      }
+    return new Response(JSON.stringify({ news: freshNews }), {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=1800" }
     });
 
   } catch (err) {
@@ -36,45 +39,30 @@ function parseRSS(xml) {
   const linkRegex = /<link>(.*?)<\/link>/;
   const dateRegex = /<pubDate>(.*?)<\/pubDate>/;
   const sourceRegex = /<source url=".*?">(.*?)<\/source>/;
-  
-  // Try to find an image in the description (often hidden in a CDATA tag)
   const imgRegex = /<img[^>]+src="([^">]+)"/; 
 
   let match;
   while ((match = itemRegex.exec(xml)) !== null) {
     const content = match[1];
-    
-    // Clean up title (remove " - Source Name" from the end)
     let rawTitle = (content.match(titleRegex) || [])[1] || "No Title";
     const source = (content.match(sourceRegex) || [])[1] || "News";
     const cleanTitle = rawTitle.split(" - " + source)[0]; 
-
     const link = (content.match(linkRegex) || [])[1] || "#";
     const pubDate = (content.match(dateRegex) || [])[1] || "";
-    
-    // Attempt to grab an image URL
-    // Google RSS images are often tiny, but better than nothing.
-    // If no image, we will use a default in the frontend.
     const description = (content.match(/<description>([\s\S]*?)<\/description>/) || [])[1] || "";
     const imgMatch = description.match(imgRegex);
-    const image = imgMatch ? imgMatch[1] : null;
 
     items.push({
       title: decodeHTMLEntities(cleanTitle),
       link: link,
-      date: new Date(pubDate).toLocaleDateString(),
+      date: pubDate, // Keep as string for now, converted in filter above
       source: source,
-      image: image
+      image: imgMatch ? imgMatch[1] : null
     });
   }
   return items;
 }
 
 function decodeHTMLEntities(text) {
-  return text.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
-             .replace(/&amp;/g, '&')
-             .replace(/&lt;/g, '<')
-             .replace(/&gt;/g, '>')
-             .replace(/&quot;/g, '"')
-             .replace(/&#39;/g, "'");
+  return text.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 }
