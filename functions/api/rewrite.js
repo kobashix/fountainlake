@@ -17,8 +17,11 @@ export async function onRequest(context) {
     text = text.replace(/\s+/g, " ").substring(0, 8000);
 
     if (!env.GEMINI_API_KEY) throw new Error("Missing GEMINI_API_KEY");
+    
+    // CLEAN THE KEY: Remove any accidental spaces
+    const apiKey = env.GEMINI_API_KEY.trim();
 
-    // 3. Prepare Gemini Payload (Switched to gemini-pro)
+    // 3. Prepare Gemini Payload
     const geminiPayload = {
       contents: [{
         parts: [{
@@ -36,8 +39,10 @@ export async function onRequest(context) {
       ]
     };
 
-    // UPDATED URL: Using 'gemini-pro'
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${env.GEMINI_API_KEY}`, {
+    // SWITCH TO V1 ENDPOINT (STABLE)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const geminiResponse = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(geminiPayload)

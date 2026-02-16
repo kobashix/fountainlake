@@ -1,6 +1,6 @@
 export async function onRequest(context) {
   const QUERY = "Fountain Lake Arkansas";
-  // We keep 'when:30d' to guide Google to give us a month of news
+  // We keep 'when:30d' to guide Google
   const RSS_URL = `https://news.google.com/rss/search?q=${encodeURIComponent(QUERY + " when:30d")}&hl=en-US&gl=US&ceid=US:en`;
 
   try {
@@ -13,16 +13,17 @@ export async function onRequest(context) {
     const xml = await response.text();
     const items = parseRSS(xml);
     
-    // --- UPDATED DATE FILTER: 30 DAYS ---
+    // --- DATE FILTER: 30 DAYS ---
     const now = new Date();
-    // 30 days in milliseconds (30 * 24 * 60 * 60 * 1000)
-    const thirtyDaysAgo = new Date(now.getTime() - (2592000000));
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
     
     const freshNews = items.filter(item => {
       const itemDate = new Date(item.date);
-      // Keep item if it's newer than 30 days
       return itemDate >= thirtyDaysAgo;
     });
+
+    // --- SORT: NEWEST FIRST ---
+    freshNews.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     return new Response(JSON.stringify({ news: freshNews }), {
       headers: { 
@@ -53,7 +54,6 @@ function parseRSS(xml) {
     const cleanTitle = rawTitle.split(" - " + source)[0]; 
     const link = (content.match(linkRegex) || [])[1] || "#";
     const pubDate = (content.match(dateRegex) || [])[1] || "";
-    
     const description = (content.match(/<description>([\s\S]*?)<\/description>/) || [])[1] || "";
     const imgMatch = description.match(imgRegex);
 
