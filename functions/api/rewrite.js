@@ -3,7 +3,7 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   
   const articleUrl = url.searchParams.get("url");
-  const articleTitle = url.searchParams.get("title"); // We now grab the title
+  const articleTitle = url.searchParams.get("title");
 
   if (!articleUrl) return new Response(JSON.stringify({ error: "Missing URL" }), { status: 400 });
   if (!env.GEMINI_API_KEY) return new Response(JSON.stringify({ error: "Missing API Key" }), { status: 500 });
@@ -11,8 +11,7 @@ export async function onRequest(context) {
   const apiKey = env.GEMINI_API_KEY.trim();
 
   try {
-    // 1. Try to fetch the article
-    // We follow redirects to try and get past the Google wrapper
+    // 1. Fetch Article & Handle Redirects
     const response = await fetch(articleUrl, { 
       headers: { "User-Agent": "Mozilla/5.0 (compatible; FountainLakeBot/1.0)" },
       redirect: 'follow' 
@@ -20,16 +19,28 @@ export async function onRequest(context) {
     
     let text = "";
     let useFallback = false;
+    let mainImage = ""; // NEW: Variable to hold the image URL
 
     if (response.ok) {
       const html = await response.text();
       
-      // 2. Detect "Google Junk"
-      // If the page contains "Google News" specific junk, it's not the real article.
+      // --- NEW: IMAGE HUNTER ---
+      // We look for the Open Graph image (used by FB/Twitter)
+      const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i) || 
+                         html.match(/<meta name="twitter:image" content="([^"]+)"/i);
+      if (imageMatch) {
+          mainImage = imageMatch[1];
+          // Fix relative URLs (rare but possible)
+          if (mainImage.startsWith("/")) {
+              const urlObj = new URL(response.url); // Use final URL after redirects
+              mainImage = `${urlObj.protocol}//${urlObj.host}${mainImage}`;
+          }
+      }
+
+      // Detect Google Junk
       if (html.includes("Google News") && html.length < 5000) {
          useFallback = true;
       } else {
-         // Clean the real HTML
          text = html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gmi, "")
                     .replace(/<style[^>]*>([\s\S]*?)<\/style>/gmi, "")
                     .replace(/<[^>]+>/g, "\n")
@@ -40,36 +51,29 @@ export async function onRequest(context) {
       useFallback = true;
     }
 
-    // 3. Construct the Prompt
+    // 2. Construct the Gutenberg Prompt
     let promptText = "";
-    
+    const gutembergRules = `
+    OUTPUT RULES:
+    1. You MUST use WordPress Gutenberg Block Grammar.
+    2. Wrap every paragraph exactly like this: 
+       <p>Content here</p>3. Wrap subheaders exactly like this: 
+       <h2>Subheader</h2>4. Do NOT use Markdown (no **, no #). 
+    `;
+
     if (useFallback || text.length < 200) {
-      // FALLBACK: Write based on Title only (Prevents "Google News" hallucination)
-      console.log("Using Fallback (Title Only)");
       promptText = `You are a local news reporter.
-      write a short, factual news brief based STRICTLY on this headline: "${articleTitle}".
-      
-      RULES:
-      - Do NOT make up names or specific quotes.
-      - State clearly that reports indicate this event happened.
-      - Keep it under 200 words.
-      - Format as HTML (<h2>, <p>).
-      - Headline wrapped in <h1>.`;
+      Write a short news brief based on this headline: "${articleTitle}".
+      ${gutembergRules}`;
     } else {
-      // STANDARD: Rewrite the full text
-      promptText = `You are a helper for a WordPress Editor. 
+      promptText = `You are a WordPress Expert. 
       Rewrite the text below into a Local News Article.
-      
-      RULES:
-      1. Output ONLY the HTML content tags (<h2>, <p>, <ul>, <li>).
-      2. Do NOT use <html>, <head>, or markdown code blocks.
-      3. HEADLINE: Write a catchy headline as the first line (wrapped in <h1>).
-      4. CREDIT: End with a <p>Source: Based on reports from ${articleTitle}</p>
-      
+      CREDIT: End with a paragraph: "Source: Based on reports from ${articleTitle}"
+      ${gutembergRules}
       SOURCE TEXT: ${text}`;
     }
 
-    // 4. Call Gemini (Self-Healing Model Loop)
+    // 3. Call Gemini
     const payload = {
       contents: [{ parts: [{ text: promptText }] }],
       safetySettings: [
@@ -95,13 +99,18 @@ export async function onRequest(context) {
 
         if (data.candidates && data.candidates.length > 0) {
           let cleanContent = cleanGeminiOutput(data.candidates[0].content.parts[0].text);
-          return new Response(JSON.stringify({ content: cleanContent }), { headers: { "Content-Type": "application/json" } });
+          
+          // RETURN TEXT AND IMAGE
+          return new Response(JSON.stringify({ 
+              content: cleanContent,
+              image: mainImage // Send the image back to frontend
+          }), { headers: { "Content-Type": "application/json" } });
         }
         if (data.error) lastError = data.error.message;
       } catch (e) { lastError = e.message; }
     }
 
-    throw new Error(`Failed to write article. Error: ${lastError}`);
+    throw new Error(`Failed. Error: ${lastError}`);
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });

@@ -106,38 +106,44 @@
       const btn = card.querySelector('button');
       const errorMsg = card.querySelector('.error-msg');
       
-      // GET DATA FROM ATTRIBUTES (Safer than parsing HTML)
       const url = card.dataset.url;
       const title = card.dataset.title;
 
       const originalText = btn.innerHTML;
-      btn.innerHTML = `<div class="spinner"></div> Writing...`;
+      btn.innerHTML = `<div class="spinner"></div> Hunter-Killer...`; // Cool loading status
       btn.disabled = true;
       errorMsg.style.display = 'none';
 
       try {
-        // CALL API
         const apiUrl = `/api/rewrite?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
         const res = await fetch(apiUrl);
         const data = await res.json();
         
         if (data.error) throw new Error(data.error);
 
-        // PREPARE WORDPRESS LINK
         let content = data.content || "";
-        // Clean up H1 if present
         let wpTitle = title;
+        
+        // Extract H1 for Title if Gemini made one
         if (content.includes("<h1>")) {
             const match = content.match(/<h1>(.*?)<\/h1>/);
             if (match) {
                 wpTitle = match[1];
-                content = content.replace(/<h1>.*?<\/h1>/, "");
+                content = content.replace(/<h1>.*?<\/h1>/, ""); // Remove from body
             }
+        }
+
+        // --- NEW: INJECT IMAGE BLOCK ---
+        // If the worker found an image, add it to the top of the post
+        if (data.image) {
+            const imageBlock = `<figure class="wp-block-image aligncenter size-large"><img src="${data.image}" alt="News Image"/></figure>
+            `;
+            
+            content = imageBlock + "\n\n" + content;
         }
 
         const finalUrl = `${WP_ADMIN_URL}?post_title=${encodeURIComponent(wpTitle)}&content=${encodeURIComponent(content)}`;
 
-        // SHOW SUCCESS BUTTON
         btn.remove();
         const actionArea = card.querySelector('.action-area');
         
@@ -156,14 +162,12 @@
         errorMsg.innerText = err.message;
         errorMsg.style.display = 'block';
         
-        // Reset button
         setTimeout(() => { 
             btn.innerHTML = originalText; 
             btn.disabled = false; 
         }, 3000);
       }
     }
-
     loadFeed();
   </script>
 </body>
