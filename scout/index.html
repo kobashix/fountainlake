@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>News Scout | Fountain Lake Network</title>
+  <link rel="stylesheet" href="/assets/css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <div style="margin-top: 2rem; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">The Scout 🕵️‍♂️</h2>
+        <p style="color: var(--text-muted);">Scanning the web for "Fountain Lake, Arkansas"</p>
+      </div>
+      <a href="/" class="btn btn-outline">Back Home</a>
+    </div>
+
+    <div id="feed" class="grid" style="margin-top: 2rem;">
+      <p class="muted">Scouting for news...</p>
+    </div>
+  </main>
+
+  <script>
+    fetch('/api/scout')
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('feed');
+        if (!data.news || data.news.length === 0) {
+          container.innerHTML = '<p class="muted">No recent news found.</p>';
+          return;
+        }
+
+        container.innerHTML = data.news.map(item => `
+          <div class="card" style="border-left: 4px solid var(--cobra-gold);">
+            <div class="kicker" style="color: #94a3b8;">${item.source} • ${item.date}</div>
+            <h3 style="margin: 0.5rem 0;">
+              <a href="${item.link}" target="_blank" style="text-decoration:none; color:white;">
+                ${item.title}
+              </a>
+            </h3>
+            <a href="${item.link}" target="_blank" style="font-size:0.9rem; color:var(--cobra-gold);">Open Article &rarr;</a>
+          </div>
+        `).join('');
+      })
+      .catch(err => {
+        document.getElementById('feed').innerHTML = '<p class="error">Scout failed to report in.</p>';
+      });
+  </script>
+</body>
+</html>
