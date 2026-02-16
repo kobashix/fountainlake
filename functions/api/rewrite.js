@@ -11,7 +11,6 @@ export async function onRequest(context) {
   const apiKey = env.GEMINI_API_KEY.trim();
 
   try {
-    // 1. Fetch Article & Handle Redirects
     const response = await fetch(articleUrl, { 
       headers: { "User-Agent": "Mozilla/5.0 (compatible; FountainLakeBot/1.0)" },
       redirect: 'follow' 
@@ -19,25 +18,22 @@ export async function onRequest(context) {
     
     let text = "";
     let useFallback = false;
-    let mainImage = ""; // NEW: Variable to hold the image URL
+    let mainImage = ""; 
 
     if (response.ok) {
       const html = await response.text();
       
-      // --- NEW: IMAGE HUNTER ---
-      // We look for the Open Graph image (used by FB/Twitter)
+      // Image Hunter
       const imageMatch = html.match(/<meta property="og:image" content="([^"]+)"/i) || 
                          html.match(/<meta name="twitter:image" content="([^"]+)"/i);
       if (imageMatch) {
           mainImage = imageMatch[1];
-          // Fix relative URLs (rare but possible)
           if (mainImage.startsWith("/")) {
-              const urlObj = new URL(response.url); // Use final URL after redirects
+              const urlObj = new URL(response.url);
               mainImage = `${urlObj.protocol}//${urlObj.host}${mainImage}`;
           }
       }
 
-      // Detect Google Junk
       if (html.includes("Google News") && html.length < 5000) {
          useFallback = true;
       } else {
@@ -51,29 +47,28 @@ export async function onRequest(context) {
       useFallback = true;
     }
 
-    // 2. Construct the Gutenberg Prompt
     let promptText = "";
-    const gutembergRules = `
+    // SIMPLIFIED PROMPT: Just ask for clean HTML. No Gutenberg blocks.
+    const rules = `
     OUTPUT RULES:
-    1. You MUST use WordPress Gutenberg Block Grammar.
-    2. Wrap every paragraph exactly like this: 
-       <p>Content here</p>3. Wrap subheaders exactly like this: 
-       <h2>Subheader</h2>4. Do NOT use Markdown (no **, no #). 
+    1. Output CLEAN HTML (<h2>, <p>, <ul>, <li>).
+    2. Do NOT use <html>, <head>, <body> tags.
+    3. Do NOT use Markdown (no **, no #).
+    4. Do NOT use comments.
     `;
 
     if (useFallback || text.length < 200) {
       promptText = `You are a local news reporter.
       Write a short news brief based on this headline: "${articleTitle}".
-      ${gutembergRules}`;
+      ${rules}`;
     } else {
-      promptText = `You are a WordPress Expert. 
-      Rewrite the text below into a Local News Article.
+      promptText = `You are a Local News Editor. 
+      Rewrite the text below.
       CREDIT: End with a paragraph: "Source: Based on reports from ${articleTitle}"
-      ${gutembergRules}
+      ${rules}
       SOURCE TEXT: ${text}`;
     }
 
-    // 3. Call Gemini
     const payload = {
       contents: [{ parts: [{ text: promptText }] }],
       safetySettings: [
@@ -99,11 +94,9 @@ export async function onRequest(context) {
 
         if (data.candidates && data.candidates.length > 0) {
           let cleanContent = cleanGeminiOutput(data.candidates[0].content.parts[0].text);
-          
-          // RETURN TEXT AND IMAGE
           return new Response(JSON.stringify({ 
               content: cleanContent,
-              image: mainImage // Send the image back to frontend
+              image: mainImage 
           }), { headers: { "Content-Type": "application/json" } });
         }
         if (data.error) lastError = data.error.message;

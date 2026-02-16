@@ -101,7 +101,7 @@
         });
     }
 
-    async function magicDraft(index) {
+async function magicDraft(index) {
       const card = document.getElementById(`card-${index}`);
       const btn = card.querySelector('button');
       const errorMsg = card.querySelector('.error-msg');
@@ -110,11 +110,12 @@
       const title = card.dataset.title;
 
       const originalText = btn.innerHTML;
-      btn.innerHTML = `<div class="spinner"></div> Hunter-Killer...`; // Cool loading status
+      btn.innerHTML = `<div class="spinner"></div> Drafting...`;
       btn.disabled = true;
       errorMsg.style.display = 'none';
 
       try {
+        // 1. Get the content
         const apiUrl = `/api/rewrite?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
         const res = await fetch(apiUrl);
         const data = await res.json();
@@ -124,48 +125,60 @@
         let content = data.content || "";
         let wpTitle = title;
         
-        // Extract H1 for Title if Gemini made one
+        // Extract H1 for Title if exists
         if (content.includes("<h1>")) {
             const match = content.match(/<h1>(.*?)<\/h1>/);
             if (match) {
                 wpTitle = match[1];
-                content = content.replace(/<h1>.*?<\/h1>/, ""); // Remove from body
+                content = content.replace(/<h1>.*?<\/h1>/, "");
             }
         }
 
-        // --- NEW: INJECT IMAGE BLOCK ---
-        // If the worker found an image, add it to the top of the post
+        // 2. Prepare HTML for Clipboard (Image + Text)
+        let clipboardHTML = "";
         if (data.image) {
-            const imageBlock = `<figure class="wp-block-image aligncenter size-large"><img src="${data.image}" alt="News Image"/></figure>
-            `;
-            
-            content = imageBlock + "\n\n" + content;
+            // Standard HTML Image tag - WordPress will auto-convert this to an Image Block on paste
+            clipboardHTML += `<img src="${data.image}" alt="News Image" /><br/><br/>`;
         }
+        clipboardHTML += content;
 
-        const finalUrl = `${WP_ADMIN_URL}?post_title=${encodeURIComponent(wpTitle)}&content=${encodeURIComponent(content)}`;
+        // 3. COPY TO CLIPBOARD
+        // We write strict HTML type so WordPress recognizes it
+        const type = "text/html";
+        const blob = new Blob([clipboardHTML], { type });
+        const dataItem = [new ClipboardItem({ [type]: blob })];
+        await navigator.clipboard.write(dataItem);
 
+        // 4. Update Button state
         btn.remove();
         const actionArea = card.querySelector('.action-area');
         
-        const successLink = document.createElement('a');
-        successLink.href = finalUrl;
-        successLink.target = "_blank";
-        successLink.className = "btn";
-        successLink.style.cssText = "text-align:center; font-size:0.8rem; background: #22c55e; color:black; border:none; font-weight:bold; text-decoration:none; display:flex; align-items:center; justify-content:center; grid-column: 2;";
-        successLink.innerHTML = "🚀 Open Draft";
+        // Create the "Open WordPress" button
+        // Note: We ONLY send the Title in the URL. You paste the Body.
+        const wpUrl = `${WP_ADMIN_URL}?post_title=${encodeURIComponent(wpTitle)}`;
         
-        actionArea.appendChild(successLink);
+        const successBtn = document.createElement('a');
+        successBtn.href = wpUrl;
+        successBtn.target = "_blank";
+        successBtn.className = "btn";
+        successBtn.style.cssText = "text-align:center; font-size:0.8rem; background: #22c55e; color:black; border:none; font-weight:bold; text-decoration:none; display:flex; align-items:center; justify-content:center; grid-column: 2; cursor:pointer;";
+        successBtn.innerHTML = "📋 Copied! Open & Paste";
+        
+        // Add a tooltip instruction
+        const instruction = document.createElement('div');
+        instruction.style.cssText = "grid-column: 1 / -1; font-size: 0.75rem; color: #22c55e; text-align: center; margin-top: 5px;";
+        instruction.innerHTML = "Draft copied to clipboard. Open WordPress and press <b>Ctrl+V</b>";
+
+        actionArea.appendChild(successBtn);
+        actionArea.appendChild(instruction);
 
       } catch (err) {
         console.error(err);
-        btn.innerHTML = "❌ Failed";
-        errorMsg.innerText = err.message;
-        errorMsg.style.display = 'block';
+        // Fallback for non-secure contexts (http)
+        alert("Error: " + err.message + "\n\n(Make sure you are using HTTPS)");
         
-        setTimeout(() => { 
-            btn.innerHTML = originalText; 
-            btn.disabled = false; 
-        }, 3000);
+        btn.innerHTML = originalText; 
+        btn.disabled = false; 
       }
     }
     loadFeed();
