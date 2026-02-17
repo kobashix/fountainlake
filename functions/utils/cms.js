@@ -21,11 +21,11 @@ async function fetchAPI(query, variables = {}) {
     return json.data;
   } catch (err) {
     console.error("Fetch Error:", err);
-    return null;
+    throw err;
   }
 }
 
-// --- 1. STANDARD POSTS (News, Politics, School) ---
+// --- 1. STANDARD POSTS (News, Politics, School, Events) ---
 
 export async function getPostList(categoryName, first = 12) {
   const query = `
@@ -64,7 +64,7 @@ export async function getSinglePost(slug) {
   return data?.post || null;
 }
 
-// --- 2. BUSINESS LISTINGS (Fixed Fields) ---
+// --- 2. BUSINESS LISTINGS (Fixed Field Name) ---
 
 export async function getBusinessList(first = 50) {
   const query = `
@@ -78,16 +78,15 @@ export async function getBusinessList(first = 50) {
             node { sourceUrl(size: LARGE) }
           }
           businessFields {
-            phone
-            website
-            # Only ask for fields we confirmed exist
             location {
               streetAddress
               city
               state
-              zipCode
+              postCode  # Changed from zipCode to postCode
             }
-            category 
+            phone
+            website
+            category
           }
         }
       }
@@ -107,16 +106,16 @@ export async function getSingleBusiness(slug) {
           node { sourceUrl(size: LARGE) }
         }
         businessFields {
-          phone
-          website
-          description
-          category
           location {
             streetAddress
             city
             state
-            zipCode
+            postCode # Changed from zipCode to postCode
           }
+          phone
+          website
+          description
+          category
         }
       }
     }

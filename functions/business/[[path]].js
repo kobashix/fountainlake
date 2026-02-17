@@ -27,10 +27,8 @@ export async function onRequest(context) {
       console.log("Fetching Business List...");
       const businesses = await getBusinessList(50);
       
-      // DEBUG: Log result to Cloudflare dashboard
       if (!businesses || businesses.length === 0) {
          console.error("No businesses found in CMS response");
-         // Return a visible error page if empty, so you know it ran
          return new Response(renderLayout({
              title: "Directory Empty",
              activeTab: "/business",
@@ -112,7 +110,7 @@ export async function onRequest(context) {
           <div class="biz-sidebar">
              <div class="sidebar-box">
                 <h3>Contact Info</h3>
-                ${address ? `<p><strong>Location:</strong><br>${address}<br>${acf.location?.zipCode || ''}</p>` : ''}
+                ${address ? `<p><strong>Location:</strong><br>${address}<br>${acf.location?.postCode || ''}</p>` : ''}
                 ${acf.phone ? `<p><strong>Phone:</strong><br><a href="tel:${acf.phone}">${acf.phone}</a></p>` : ''}
                 ${acf.website ? `<a href="${acf.website}" target="_blank" class="btn-full">Visit Website</a>` : ''}
              </div>
@@ -128,7 +126,6 @@ export async function onRequest(context) {
     return new Response("Invalid Path", { status: 400 });
 
   } catch (err) {
-    // CRITICAL ERROR DUMP
     return new Response(`
       <div style="font-family:monospace; padding: 2rem; background: #fee; color: red; border: 2px solid red;">
         <h1>CRITICAL ERROR</h1>
