@@ -25,7 +25,51 @@ async function fetchAPI(query, variables = {}) {
   }
 }
 
-// 1. Get List of Businesses
+// --- 1. NEWS & POLITICS FUNCTIONS (Restored) ---
+
+export async function getPostList(categoryName, first = 12) {
+  const query = `
+    query GetPosts($categoryName: String!, $first: Int!) {
+      posts(first: $first, where: { categoryName: $categoryName }) {
+        nodes {
+          title
+          date
+          slug
+          excerpt
+          featuredImage {
+            node {
+              sourceUrl(size: LARGE)
+            }
+          }
+        }
+      }
+    }
+  `;
+  const data = await fetchAPI(query, { categoryName, first });
+  return data?.posts?.nodes || [];
+}
+
+export async function getSinglePost(slug) {
+  const query = `
+    query GetPost($slug: ID!) {
+      post(id: $slug, idType: SLUG) {
+        title
+        date
+        content
+        featuredImage {
+          node {
+            sourceUrl(size: LARGE)
+          }
+        }
+      }
+    }
+  `;
+  const data = await fetchAPI(query, { slug });
+  return data?.post || null;
+}
+
+// --- 2. BUSINESS FUNCTIONS (New) ---
+
 export async function getBusinessList(first = 50) {
   const query = `
     query GetBusinesses($first: Int!) {
@@ -37,12 +81,11 @@ export async function getBusinessList(first = 50) {
           featuredImage {
             node { sourceUrl(size: LARGE) }
           }
-          # CORRECTED FIELDS BASED ON YOUR SCHEMA
           businessFields {
-            location   # Was "address"
+            location
             phone
             website
-            category   # New field you have
+            category
           }
         }
       }
@@ -52,7 +95,6 @@ export async function getBusinessList(first = 50) {
   return data?.businesses?.nodes || [];
 }
 
-// 2. Get Single Business Profile
 export async function getSingleBusiness(slug) {
   const query = `
     query GetBusiness($slug: ID!) {
@@ -62,12 +104,11 @@ export async function getSingleBusiness(slug) {
         featuredImage {
           node { sourceUrl(size: LARGE) }
         }
-        # CORRECTED FIELDS
         businessFields {
           location
           phone
           website
-          description  # You have a specific description field here
+          description
           category
         }
       }
@@ -76,5 +117,3 @@ export async function getSingleBusiness(slug) {
   const data = await fetchAPI(query, { slug });
   return data?.business || null;
 }
-
-// ... Keep your existing getPostList / getSinglePost functions for News ...
