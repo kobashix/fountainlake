@@ -14,7 +14,7 @@ export async function onRequest(context) {
   try {
     // SCENARIO 1: NEWS INDEX (List View)
     if (path.length === 0) {
-      const posts = await getPostList("business");
+      const posts = await getPostList("politics");
       
       const cardsHTML = posts.map(post => `
         <article class="news-card">
