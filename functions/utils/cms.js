@@ -16,12 +16,12 @@ async function fetchAPI(query, variables = {}) {
     const json = await res.json();
     if (json.errors) {
       console.error("CMS Errors:", json.errors);
-      throw new Error("GraphQL Error");
+      throw new Error(`GraphQL Error: ${json.errors.map(e => e.message).join(", ")}`);
     }
     return json.data;
   } catch (err) {
     console.error("Fetch Error:", err);
-    return null;
+    throw err; // Re-throw so the frontend sees it
   }
 }
 
@@ -64,7 +64,7 @@ export async function getSinglePost(slug) {
   return data?.post || null;
 }
 
-// --- 2. BUSINESS LISTINGS (Custom Post Type) ---
+// --- 2. BUSINESS LISTINGS (SAFE MODE) ---
 
 export async function getBusinessList(first = 50) {
   const query = `
@@ -77,11 +77,12 @@ export async function getBusinessList(first = 50) {
           featuredImage {
             node { sourceUrl(size: LARGE) }
           }
+          # SAFE FIELDS ONLY (Text fields usually don't crash)
           businessFields {
-            location
             phone
             website
-            category
+            # category  <-- Commented out to prevent list/object crash
+            # location  <-- Commented out to prevent map object crash
           }
         }
       }
@@ -101,11 +102,11 @@ export async function getSingleBusiness(slug) {
           node { sourceUrl(size: LARGE) }
         }
         businessFields {
-          location
           phone
           website
           description
-          category
+          # category
+          # location
         }
       }
     }
