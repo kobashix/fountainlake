@@ -116,3 +116,21 @@ a { text-decoration: none; color: inherit; }
 .biz-profile-body { display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; margin-top: 2rem; }
 .sidebar-box { background: #f8fafc; padding: 1.5rem; border-radius: 8px; border: 1px solid #e2e8f0; }
 .btn-full { display: block; background: #d4af37; color: black; text-align: center; padding: 0.75rem; border-radius: 4px; font-weight: bold; margin-top: 1rem; }
+.badge-sm {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.biz-meta {
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: #475569;
+  text-align: left;
+  padding-left: 1rem;
+}

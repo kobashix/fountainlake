@@ -1,9 +1,6 @@
 // functions/utils/cms.js
 
-// CONFIGURATION
 const WP_GRAPHQL_URL = "https://cms.fountainlake.net/graphql";
-
-// This header tricks the server into thinking we are a real browser, not a bot
 const HEADERS = { 
   'Content-Type': 'application/json',
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -16,67 +13,19 @@ async function fetchAPI(query, variables = {}) {
       headers: HEADERS,
       body: JSON.stringify({ query, variables }),
     });
-
     const json = await res.json();
     if (json.errors) {
-      console.error("CMS Error:", json.errors);
-      throw new Error('Failed to fetch API');
+      console.error("CMS Errors:", json.errors);
+      throw new Error("GraphQL Error");
     }
     return json.data;
   } catch (err) {
-    console.error("Network Error:", err); 
-    return null; // Fail gracefully
+    console.error("Fetch Error:", err);
+    return null;
   }
 }
 
-// 1. Get a List of Posts (for the main feed)
-export async function getPostList(categoryName, first = 12) {
-  const query = `
-    query GetPosts($categoryName: String!, $first: Int!) {
-      posts(first: $first, where: { categoryName: $categoryName }) {
-        nodes {
-          title
-          date
-          slug
-          excerpt
-          featuredImage {
-            node {
-              sourceUrl(size: LARGE)
-            }
-          }
-        }
-      }
-    }
-  `;
-  const data = await fetchAPI(query, { categoryName, first });
-  return data?.posts?.nodes || [];
-}
-
-// 2. Get a Single Post (for the article view)
-export async function getSinglePost(slug) {
-  const query = `
-    query GetPost($slug: ID!) {
-      post(id: $slug, idType: SLUG) {
-        title
-        date
-        content
-        featuredImage {
-          node {
-            sourceUrl(size: LARGE)
-          }
-        }
-      }
-    }
-  `;
-  const data = await fetchAPI(query, { slug });
-  return data?.post || null;
-}
-
-// functions/utils/cms.js
-
-// ... keep your existing imports and fetchAPI function ...
-
-// --- NEW FUNCTION FOR CPT BUSINESSES ---
+// 1. Get List of Businesses
 export async function getBusinessList(first = 50) {
   const query = `
     query GetBusinesses($first: Int!) {
@@ -85,18 +34,16 @@ export async function getBusinessList(first = 50) {
           title
           slug
           excerpt
-          content
           featuredImage {
-            node {
-              sourceUrl(size: LARGE)
-            }
+            node { sourceUrl(size: LARGE) }
           }
-          # If you have custom fields like phone/address, they go here.
-          # Example:
-          # businessData {
-          #   phone
-          #   address
-          # }
+          # CORRECTED FIELDS BASED ON YOUR SCHEMA
+          businessFields {
+            location   # Was "address"
+            phone
+            website
+            category   # New field you have
+          }
         }
       }
     }
@@ -105,7 +52,7 @@ export async function getBusinessList(first = 50) {
   return data?.businesses?.nodes || [];
 }
 
-// Update getSinglePost to look for businesses too if needed
+// 2. Get Single Business Profile
 export async function getSingleBusiness(slug) {
   const query = `
     query GetBusiness($slug: ID!) {
@@ -113,9 +60,15 @@ export async function getSingleBusiness(slug) {
         title
         content
         featuredImage {
-          node {
-            sourceUrl(size: LARGE)
-          }
+          node { sourceUrl(size: LARGE) }
+        }
+        # CORRECTED FIELDS
+        businessFields {
+          location
+          phone
+          website
+          description  # You have a specific description field here
+          category
         }
       }
     }
@@ -123,3 +76,5 @@ export async function getSingleBusiness(slug) {
   const data = await fetchAPI(query, { slug });
   return data?.business || null;
 }
+
+// ... Keep your existing getPostList / getSinglePost functions for News ...
