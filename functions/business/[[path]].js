@@ -1,6 +1,22 @@
 import { getBusinessList, getSingleBusiness } from '../utils/cms';
 import { renderLayout } from '../utils/layout';
 
+// Helper to format the Google Map object into a string
+function formatAddress(loc) {
+  if (!loc) return null;
+  const parts = [loc.streetAddress, loc.city, loc.state].filter(Boolean);
+  return parts.join(", ");
+}
+
+// Helper to format category list
+function formatCategory(cat) {
+  if (!cat) return "Local Business";
+  if (Array.isArray(cat)) {
+    return cat.map(c => (typeof c === 'object' ? c.name : c)).join(", "); 
+  }
+  return cat; 
+}
+
 export async function onRequest(context) {
   const { params } = context;
   const path = params.path || [];
@@ -8,10 +24,13 @@ export async function onRequest(context) {
   try {
     // --- DIRECTORY LIST ---
     if (path.length === 0) {
+      console.log("Fetching Business List...");
       const businesses = await getBusinessList(50);
       
-      // DEBUG: If empty, show a visible message
+      // DEBUG: Log result to Cloudflare dashboard
       if (!businesses || businesses.length === 0) {
+         console.error("No businesses found in CMS response");
+         // Return a visible error page if empty, so you know it ran
          return new Response(renderLayout({
              title: "Directory Empty",
              activeTab: "/business",
@@ -24,6 +43,8 @@ export async function onRequest(context) {
 
       const cards = businesses.map(biz => {
         const acf = biz.businessFields || {};
+        const address = formatAddress(acf.location);
+        const cat = formatCategory(acf.category);
         
         return `
         <div class="biz-card">
@@ -34,8 +55,9 @@ export async function onRequest(context) {
             <h3>${biz.title}</h3>
             
             <div class="biz-meta">
+              <div class="badge-sm">${cat}</div>
               ${acf.phone ? `<div>📞 ${acf.phone}</div>` : ''}
-              ${acf.website ? `<div>🌐 <a href="${acf.website}" target="_blank">Website</a></div>` : ''}
+              ${address ? `<div>📍 ${address}</div>` : ''}
             </div>
 
             <a href="/business/${biz.slug}" class="btn-outline">View Profile</a>
@@ -68,6 +90,8 @@ export async function onRequest(context) {
       }
 
       const acf = biz.businessFields || {};
+      const address = formatAddress(acf.location);
+      const cat = formatCategory(acf.category);
 
       const content = `
         <div class="biz-profile-header">
@@ -75,7 +99,7 @@ export async function onRequest(context) {
             <img src="${biz.featuredImage?.node?.sourceUrl || '/assets/img/default-logo.png'}" class="biz-profile-logo">
             <div>
               <h1>${biz.title}</h1>
-              <span class="badge">Local Business</span>
+              <span class="badge">${cat}</span>
             </div>
           </div>
         </div>
@@ -88,6 +112,7 @@ export async function onRequest(context) {
           <div class="biz-sidebar">
              <div class="sidebar-box">
                 <h3>Contact Info</h3>
+                ${address ? `<p><strong>Location:</strong><br>${address}<br>${acf.location?.zipCode || ''}</p>` : ''}
                 ${acf.phone ? `<p><strong>Phone:</strong><br><a href="tel:${acf.phone}">${acf.phone}</a></p>` : ''}
                 ${acf.website ? `<a href="${acf.website}" target="_blank" class="btn-full">Visit Website</a>` : ''}
              </div>
@@ -103,7 +128,7 @@ export async function onRequest(context) {
     return new Response("Invalid Path", { status: 400 });
 
   } catch (err) {
-    // RAW ERROR DUMP: This puts the error right on the screen so you can see it.
+    // CRITICAL ERROR DUMP
     return new Response(`
       <div style="font-family:monospace; padding: 2rem; background: #fee; color: red; border: 2px solid red;">
         <h1>CRITICAL ERROR</h1>

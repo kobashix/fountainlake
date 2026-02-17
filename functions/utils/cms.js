@@ -21,11 +21,11 @@ async function fetchAPI(query, variables = {}) {
     return json.data;
   } catch (err) {
     console.error("Fetch Error:", err);
-    throw err; // Re-throw so the frontend sees it
+    return null;
   }
 }
 
-// --- 1. STANDARD POSTS (News, Politics, School, Events) ---
+// --- 1. STANDARD POSTS (News, Politics, School) ---
 
 export async function getPostList(categoryName, first = 12) {
   const query = `
@@ -64,7 +64,7 @@ export async function getSinglePost(slug) {
   return data?.post || null;
 }
 
-// --- 2. BUSINESS LISTINGS (SAFE MODE) ---
+// --- 2. BUSINESS LISTINGS (Fixed Fields) ---
 
 export async function getBusinessList(first = 50) {
   const query = `
@@ -77,12 +77,17 @@ export async function getBusinessList(first = 50) {
           featuredImage {
             node { sourceUrl(size: LARGE) }
           }
-          # SAFE FIELDS ONLY (Text fields usually don't crash)
           businessFields {
             phone
             website
-            # category  <-- Commented out to prevent list/object crash
-            # location  <-- Commented out to prevent map object crash
+            # Only ask for fields we confirmed exist
+            location {
+              streetAddress
+              city
+              state
+              zipCode
+            }
+            category 
           }
         }
       }
@@ -105,8 +110,13 @@ export async function getSingleBusiness(slug) {
           phone
           website
           description
-          # category
-          # location
+          category
+          location {
+            streetAddress
+            city
+            state
+            zipCode
+          }
         }
       }
     }
