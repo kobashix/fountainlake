@@ -1,14 +1,14 @@
 // functions/utils/layout.js
 
 export function renderLayout({ title, content, activeTab }) {
-  // Navigation Configuration
+  // CONFIGURATION: Public Menu Items Only
   const navLinks = [
     { name: "News", url: "/news" },
     { name: "Business", url: "/business" },
     { name: "Events", url: "/events" },
     { name: "Politics", url: "/politics" },
     { name: "School", url: "/school" },
-    { name: "Scout", url: "/scout" } // Kept Scout for you
+    { name: "About", url: "/about" }
   ];
 
   const navHTML = navLinks.map(link => 

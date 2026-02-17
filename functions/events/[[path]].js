@@ -30,7 +30,7 @@ export async function onRequest(context) {
       const pageContent = `
         <header class="page-header">
           <div class="container">
-            <h1>Latest News</h1>
+            <h1>Latest Events</h1>
           </div>
         </header>
         <div class="container grid-layout">

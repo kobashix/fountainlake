@@ -25,7 +25,7 @@ async function fetchAPI(query, variables = {}) {
   }
 }
 
-// --- 1. NEWS & POLITICS FUNCTIONS (Restored) ---
+// --- 1. STANDARD POSTS (News, Politics, School, Events) ---
 
 export async function getPostList(categoryName, first = 12) {
   const query = `
@@ -37,9 +37,7 @@ export async function getPostList(categoryName, first = 12) {
           slug
           excerpt
           featuredImage {
-            node {
-              sourceUrl(size: LARGE)
-            }
+            node { sourceUrl(size: LARGE) }
           }
         }
       }
@@ -57,9 +55,7 @@ export async function getSinglePost(slug) {
         date
         content
         featuredImage {
-          node {
-            sourceUrl(size: LARGE)
-          }
+          node { sourceUrl(size: LARGE) }
         }
       }
     }
@@ -68,7 +64,7 @@ export async function getSinglePost(slug) {
   return data?.post || null;
 }
 
-// --- 2. BUSINESS FUNCTIONS (New) ---
+// --- 2. BUSINESS LISTINGS (Custom Post Type) ---
 
 export async function getBusinessList(first = 50) {
   const query = `
