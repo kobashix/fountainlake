@@ -21,7 +21,7 @@ async function fetchAPI(query, variables = {}) {
     return json.data;
   } catch (err) {
     console.error("Fetch Error:", err);
-    throw err;
+    return null;
   }
 }
 
@@ -64,7 +64,7 @@ export async function getSinglePost(slug) {
   return data?.post || null;
 }
 
-// --- 2. BUSINESS LISTINGS (Fixed Field Name) ---
+// --- 2. BUSINESS LISTINGS (Fixed Location Object) ---
 
 export async function getBusinessList(first = 50) {
   const query = `
@@ -78,15 +78,16 @@ export async function getBusinessList(first = 50) {
             node { sourceUrl(size: LARGE) }
           }
           businessFields {
+            phone
+            website
+            category
+            # FIX: Location is an object, must request subfields
             location {
               streetAddress
               city
               state
-              postCode  # Changed from zipCode to postCode
+              postCode
             }
-            phone
-            website
-            category
           }
         }
       }
@@ -106,16 +107,17 @@ export async function getSingleBusiness(slug) {
           node { sourceUrl(size: LARGE) }
         }
         businessFields {
-          location {
-            streetAddress
-            city
-            state
-            postCode # Changed from zipCode to postCode
-          }
           phone
           website
           description
           category
+          # FIX: Location is an object, must request subfields
+          location {
+            streetAddress
+            city
+            state
+            postCode
+          }
         }
       }
     }
