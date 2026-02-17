@@ -64,7 +64,7 @@ export async function getSinglePost(slug) {
   return data?.post || null;
 }
 
-// --- 2. BUSINESS LISTINGS (Fixed for Google Maps & Categories) ---
+// --- 2. BUSINESS LISTINGS (Custom Post Type) ---
 
 export async function getBusinessList(first = 50) {
   const query = `
@@ -78,17 +78,10 @@ export async function getBusinessList(first = 50) {
             node { sourceUrl(size: LARGE) }
           }
           businessFields {
+            location
             phone
             website
-            # Handle List (Multi-select)
-            category 
-            # Handle Google Map Object
-            location {
-              streetAddress
-              city
-              state
-              zipCode
-            }
+            category
           }
         }
       }
@@ -108,20 +101,64 @@ export async function getSingleBusiness(slug) {
           node { sourceUrl(size: LARGE) }
         }
         businessFields {
+          location
           phone
           website
           description
           category
-          location {
-            streetAddress
-            city
-            state
-            zipCode
-          }
         }
       }
     }
   `;
   const data = await fetchAPI(query, { slug });
   return data?.business || null;
+}
+
+// --- 3. EVENTS (Calendar Mode) ---
+
+export async function getEventList(first = 20) {
+  const query = `
+    query GetEvents($first: Int!) {
+      posts(first: $first, where: { categoryName: "events" }) {
+        nodes {
+          title
+          slug
+          content
+          featuredImage {
+            node { sourceUrl(size: LARGE) }
+          }
+          date 
+          eventFields {
+            eventDate
+            eventTime
+            location
+          }
+        }
+      }
+    }
+  `;
+  const data = await fetchAPI(query, { first });
+  return data?.posts?.nodes || [];
+}
+
+export async function getSingleEvent(slug) {
+  const query = `
+    query GetEvent($slug: ID!) {
+      post(id: $slug, idType: SLUG) {
+        title
+        content
+        featuredImage {
+          node { sourceUrl(size: LARGE) }
+        }
+        eventFields {
+          eventDate
+          eventTime
+          location
+          organizer
+        }
+      }
+    }
+  `;
+  const data = await fetchAPI(query, { slug });
+  return data?.post || null;
 }

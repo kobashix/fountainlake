@@ -54,7 +54,7 @@ export async function onRequest(context) {
     1. Output CLEAN HTML (<h2>, <p>, <ul>, <li>).
     2. Do NOT use <html>, <head>, <body> tags.
     3. Do NOT use Markdown (no **, no #).
-    4. Do NOT use comments.
+    4. Do NOT use <!-- wp: --> comments.
     `;
 
     if (useFallback || text.length < 200) {

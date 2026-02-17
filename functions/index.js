@@ -38,6 +38,7 @@ export async function onRequest(context) {
       }
     </style>
 
+    <!-- HERO SECTION -->
     ${featured ? `
     <section class="hero-section">
       <div class="hero-card">
@@ -52,8 +53,10 @@ export async function onRequest(context) {
     </section>
     ` : ''}
 
+    <!-- 3-COLUMN DASHBOARD -->
     <div class="home-grid">
       
+      <!-- COLUMN 1: NEWS FEED -->
       <section>
         <h2 class="section-title">Community News</h2>
         <div class="feed">
@@ -67,6 +70,7 @@ export async function onRequest(context) {
         </div>
       </section>
 
+      <!-- COLUMN 2: BUSINESS SPOTLIGHT -->
       <section>
         <h2 class="section-title">Support Local</h2>
         <div class="business-feed">
@@ -83,6 +87,7 @@ export async function onRequest(context) {
         </div>
       </section>
 
+      <!-- COLUMN 3: CIVICS & SCHOOL -->
       <section>
         <h2 class="section-title">Civics & Schools</h2>
         

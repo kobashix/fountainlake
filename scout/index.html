@@ -19,7 +19,6 @@
     }
     .scout-img.has-image { display: block; }
     
-    /* Loading Spinner */
     .spinner {
       display: inline-block; width: 1rem; height: 1rem;
       border: 2px solid rgba(255,255,255,0.3);
@@ -28,11 +27,8 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Success Message */
-    .success-box {
-      background: #22c55e; color: black; padding: 0.5rem;
-      border-radius: 4px; text-align: center; font-weight: bold;
-      margin-top: 0.5rem; display: none;
+    .error-msg {
+      color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display: none;
     }
   </style>
 </head>
@@ -52,8 +48,8 @@
   </main>
 
   <script>
-    // YOUR WORDPRESS URL
-    const WP_ADMIN_URL = "https://cms.fountainlake.net/wp-admin/post-new.php";
+    // CONFIGURATION
+    const WP_ADMIN_URL = "https://cms.fountainlake.net/wp-admin/post-new.php?post_type=news";
 
     function loadFeed() {
       const container = document.getElementById('feed');
@@ -69,9 +65,6 @@
           container.innerHTML = data.news.map((item, index) => {
             const imgClass = item.image ? 'has-image' : '';
             const imgTag = item.image ? `<img src="${item.image}" class="scout-img ${imgClass}">` : '';
-
-            // SAFE TITLE ENCODING
-            // We store the title in a data attribute to avoid quote escaping issues
             const safeTitle = item.title.replace(/"/g, '&quot;');
 
             return `
@@ -90,32 +83,30 @@
                     ✨ Magic Draft
                   </button>
                 </div>
-                <div class="error-msg" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display:none;"></div>
+                <div class="error-msg"></div>
               </div>
             `;
           }).join('');
         })
         .catch(err => {
-            console.error(err);
-            document.getElementById('feed').innerHTML = `<p style="color:red">Error loading feed: ${err.message}</p>`;
+            document.getElementById('feed').innerHTML = `<p style="color:red">Error: ${err.message}</p>`;
         });
     }
 
-async function magicDraft(index) {
+    async function magicDraft(index) {
       const card = document.getElementById(`card-${index}`);
       const btn = card.querySelector('button');
+      const actionArea = card.querySelector('.action-area');
       const errorMsg = card.querySelector('.error-msg');
       
       const url = card.dataset.url;
       const title = card.dataset.title;
 
-      const originalText = btn.innerHTML;
-      btn.innerHTML = `<div class="spinner"></div> Drafting...`;
+      btn.innerHTML = `<div class="spinner"></div> Scanning & Copying...`;
       btn.disabled = true;
       errorMsg.style.display = 'none';
 
       try {
-        // 1. Get the content
         const apiUrl = `/api/rewrite?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
         const res = await fetch(apiUrl);
         const data = await res.json();
@@ -125,62 +116,50 @@ async function magicDraft(index) {
         let content = data.content || "";
         let wpTitle = title;
         
-        // Extract H1 for Title if exists
-        if (content.includes("<h1>")) {
-            const match = content.match(/<h1>(.*?)<\/h1>/);
-            if (match) {
-                wpTitle = match[1];
-                content = content.replace(/<h1>.*?<\/h1>/, "");
-            }
+        const h1Match = content.match(/<h1>(.*?)<\/h1>/);
+        if (h1Match) {
+            wpTitle = h1Match[1];
+            content = content.replace(/<h1>.*?<\/h1>/, "");
         }
 
-        // 2. Prepare HTML for Clipboard (Image + Text)
         let clipboardHTML = "";
         if (data.image) {
-            // Standard HTML Image tag - WordPress will auto-convert this to an Image Block on paste
-            clipboardHTML += `<img src="${data.image}" alt="News Image" /><br/><br/>`;
+            clipboardHTML += `<img src="${data.image}" alt="Featured News Image" /><br/><br/>`;
         }
         clipboardHTML += content;
 
-        // 3. COPY TO CLIPBOARD
-        // We write strict HTML type so WordPress recognizes it
         const type = "text/html";
         const blob = new Blob([clipboardHTML], { type });
         const dataItem = [new ClipboardItem({ [type]: blob })];
         await navigator.clipboard.write(dataItem);
 
-        // 4. Update Button state
         btn.remove();
-        const actionArea = card.querySelector('.action-area');
         
-        // Create the "Open WordPress" button
-        // Note: We ONLY send the Title in the URL. You paste the Body.
-        const wpUrl = `${WP_ADMIN_URL}?post_title=${encodeURIComponent(wpTitle)}`;
+        const wpUrl = `${WP_ADMIN_URL}&post_title=${encodeURIComponent(wpTitle)}`;
         
         const successBtn = document.createElement('a');
         successBtn.href = wpUrl;
         successBtn.target = "_blank";
         successBtn.className = "btn";
         successBtn.style.cssText = "text-align:center; font-size:0.8rem; background: #22c55e; color:black; border:none; font-weight:bold; text-decoration:none; display:flex; align-items:center; justify-content:center; grid-column: 2; cursor:pointer;";
-        successBtn.innerHTML = "📋 Copied! Open & Paste";
+        successBtn.innerHTML = "📋 Copied! Create News";
         
-        // Add a tooltip instruction
         const instruction = document.createElement('div');
-        instruction.style.cssText = "grid-column: 1 / -1; font-size: 0.75rem; color: #22c55e; text-align: center; margin-top: 5px;";
-        instruction.innerHTML = "Draft copied to clipboard. Open WordPress and press <b>Ctrl+V</b>";
+        instruction.style.cssText = "grid-column: 1 / -1; font-size: 0.75rem; color: #22c55e; text-align: center; margin-top: 8px; font-style: italic;";
+        instruction.innerHTML = "News draft in clipboard. Click button, then <b>Ctrl+V</b> in the editor.";
 
         actionArea.appendChild(successBtn);
         actionArea.appendChild(instruction);
 
       } catch (err) {
         console.error(err);
-        // Fallback for non-secure contexts (http)
-        alert("Error: " + err.message + "\n\n(Make sure you are using HTTPS)");
-        
-        btn.innerHTML = originalText; 
-        btn.disabled = false; 
+        btn.innerHTML = "❌ Failed";
+        errorMsg.innerText = err.message;
+        errorMsg.style.display = 'block';
+        setTimeout(() => { btn.innerHTML = "✨ Magic Draft"; btn.disabled = false; }, 3000);
       }
     }
+
     loadFeed();
   </script>
 </body>

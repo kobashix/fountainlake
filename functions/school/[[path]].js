@@ -7,25 +7,25 @@ export async function onRequest(context) {
 
   // --- LIST ---
   if (path.length === 0) {
-    const posts = await getPostList("politics");
+    const posts = await getPostList("school");
 
     const cards = posts.map(post => `
       <article class="card">
         <div class="card-img" style="background-image: url('${post.featuredImage?.node?.sourceUrl || ''}')"></div>
         <div class="card-body">
           <span class="date">${new Date(post.date).toLocaleDateString()}</span>
-          <h2><a href="/politics/${post.slug}">${post.title}</a></h2>
+          <h2><a href="/school/${post.slug}">${post.title}</a></h2>
           <div class="excerpt">${post.excerpt}</div>
         </div>
       </article>
     `).join('');
 
     const content = `
-      <h1 style="margin-bottom: 2rem;">Politics & Election News</h1>
+      <h1 style="margin-bottom: 2rem;">School & Sports</h1>
       <div class="grid">${cards}</div>
     `;
 
-    return new Response(renderLayout({ title: "Politics", content, activeTab: "/politics" }), {
+    return new Response(renderLayout({ title: "School", content, activeTab: "/school" }), {
       headers: { "Content-Type": "text/html" }
     });
   }
@@ -50,7 +50,7 @@ export async function onRequest(context) {
       </article>
     `;
 
-    return new Response(renderLayout({ title: post.title, content, activeTab: "/politics" }), {
+    return new Response(renderLayout({ title: post.title, content, activeTab: "/school" }), {
       headers: { "Content-Type": "text/html" }
     });
   }

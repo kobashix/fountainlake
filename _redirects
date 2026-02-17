@@ -1,6 +1,2 @@
-# 1. Handle specific files first
-/sitemap.xml  /api/sitemap  200
-/robots.txt   /robots.txt   200
-
-# This version avoids the infinite loop warning
-/:path  /index.html  200
+/sitemap.xml  /api/sitemap  200 /robots.txt   /robots.txt   200
+/* /index.html 200

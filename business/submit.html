@@ -3,118 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <title>Submit a Business | Fountain Lake Network</title>
-
-  <meta name="description" content="Submit a local business for inclusion in the Fountain Lake Network directory." />
-  <meta name="robots" content="index, follow" />
-
+  <title>Add Your Business | Fountain Lake Network</title>
   <link rel="stylesheet" href="/assets/css/style.css" />
 </head>
-
 <body>
-  <main>
+  <script src="/assets/js/script.js"></script>
 
-    <!-- CONTENT -->
-    <article class="content">
-      <h2>Submit a Local Business</h2>
-
-      <p>
-        This directory exists for one reason:  
-        to give Fountain Lake residents a reliable list of businesses that actually serve the area.
+  <main class="container">
+    <div style="max-width: 600px; margin: 3rem auto;">
+      <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Add Your Business</h2>
+      <p style="color: var(--text-muted); margin-bottom: 2rem;">
+        Listings are free. We only accept businesses that physically serve the Fountain Lake area.
       </p>
 
-      <p>
-        No ads. No pay-to-play. Just accurate listings.
-      </p>
+      <form id="biz-submit-form" class="card" style="display: flex; flex-direction: column; gap: 1.5rem; background: #1e293b; padding: 2rem; border-radius: 8px; border: 1px solid var(--border);">
+        
+        <!-- Business Name -->
+        <div>
+          <label class="kicker" for="title" style="display:block; margin-bottom:0.5rem;">Business Name</label>
+          <input type="text" id="title" required 
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;"
+            placeholder="e.g. Fountain Lake Hardware">
+        </div>
 
-      <h3>Who Should Submit</h3>
-      <ul>
-        <li>Brick-and-mortar businesses</li>
-        <li>Home-based businesses</li>
-        <li>Trades, contractors, and services</li>
-        <li>Food, retail, and professional services</li>
-      </ul>
+        <!-- Grid for Category & Phone -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label class="kicker" for="category" style="display:block; margin-bottom:0.5rem;">Category</label>
+            <select id="category" style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;">
+              <option value="Dining">Dining</option>
+              <option value="Retail">Retail</option>
+              <option value="Services">Services</option>
+              <option value="Automotive">Automotive</option>
+              <option value="Health">Health</option>
+              <option value="Home & Repair">Home & Repair</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="kicker" for="phone" style="display:block; margin-bottom:0.5rem;">Phone</label>
+            <input type="tel" id="phone" 
+              style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;"
+              placeholder="501-555-0199">
+          </div>
+        </div>
 
-      <h3>Business Information</h3>
+        <!-- Description -->
+        <div>
+          <label class="kicker" for="description" style="display:block; margin-bottom:0.5rem;">Description</label>
+          <textarea id="description" required rows="4"
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-family: inherit; font-size: 1rem;"
+            placeholder="Tell us what you offer and your hours..."></textarea>
+        </div>
 
-      <form id="business-form" class="form">
-        <label>
-          Business Name *
-          <input type="text" name="title" required />
-        </label>
+        <!-- Website -->
+        <div>
+          <label class="kicker" for="website" style="display:block; margin-bottom:0.5rem;">Website / Facebook</label>
+          <input type="url" id="website" 
+            style="width: 100%; padding: 0.8rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 1rem;"
+            placeholder="https://...">
+        </div>
 
-        <label>
-          Category *
-          <select name="category" required>
-            <option value="">Select one</option>
-            <option>Dining</option>
-            <option>Retail</option>
-            <option>Services</option>
-            <option>Trades</option>
-            <option>Automotive</option>
-            <option>Health</option>
-            <option>Other</option>
-          </select>
-        </label>
-
-        <label>
-          Business Description *
-          <textarea name="description" rows="4" required></textarea>
-        </label>
-
-        <label>
-          Website
-          <input type="url" name="website" placeholder="https://example.com" />
-        </label>
-
-        <label>
-          Phone
-          <input type="tel" name="phone" />
-        </label>
-
-        <h3>Location</h3>
-
-        <label>
-          Street Address *
-          <input type="text" name="streetAddress" required />
-        </label>
-
-        <label>
-          City
-          <input type="text" name="city" />
-        </label>
-
-        <label>
-          State
-          <input type="text" name="stateShort" value="AR" />
-        </label>
-
-        <label>
-          ZIP Code
-          <input type="text" name="postCode" />
-        </label>
-
-        <button type="submit">Submit Business</button>
+        <!-- Submit Button -->
+        <button type="submit" class="btn" style="border:none; cursor:pointer; width: 100%; font-size: 1rem; padding: 1rem;">Submit for Review</button>
+        <p id="status-msg" style="text-align: center; font-size: 0.9rem; margin-top: 1rem; min-height: 1.5rem;"></p>
       </form>
 
-      <p class="muted">
-        Submissions are reviewed before publishing to keep the directory accurate.
-      </p>
-
-      <p class="back-link">
-        <a href="/business/">← Back to Business Directory</a>
-      </p>
-    </article>
+      <div style="text-align: center; margin-top: 2rem;">
+        <a href="/business/" style="color: var(--text-muted); text-decoration: none;">&larr; Back to Directory</a>
+      </div>
+    </div>
   </main>
 
-  <!-- Placeholder JS (we wire this next) -->
   <script>
-    document.getElementById("business-form").addEventListener("submit", function (e) {
+    document.getElementById('biz-submit-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      alert("Submission received. Review pending.");
+      
+      const btn = e.target.querySelector('button');
+      const msg = document.getElementById('status-msg');
+      
+      // Collect Data
+      const payload = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        category: document.getElementById('category').value,
+        phone: document.getElementById('phone').value,
+        website: document.getElementById('website').value
+      };
+
+      // Lock UI
+      btn.disabled = true;
+      btn.innerText = "Sending...";
+      msg.innerText = "";
+
+      try {
+        const res = await fetch('/api/submit-business', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const json = await res.json();
+        
+        if (json.success) {
+          document.getElementById('biz-submit-form').innerHTML = `
+            <div style="text-align:center; padding: 3rem 1rem;">
+              <h3 style="color: var(--cobra-gold); font-size: 2rem; margin-bottom: 1rem;">Received!</h3>
+              <p style="color: var(--text-muted); font-size: 1.1rem;">Your listing has been sent to the editor.</p>
+              <a href="/business/" class="btn btn-outline" style="margin-top:2rem; display:inline-block;">Back to Directory</a>
+            </div>
+          `;
+        } else {
+          throw new Error(json.message || "Unknown error");
+        }
+      } catch (err) {
+        msg.style.color = "#ff6b6b";
+        msg.innerText = "Error: " + err.message;
+        btn.disabled = false;
+        btn.innerText = "Try Again";
+      }
     });
   </script>
-    <script src="/assets/js/script.js"></script>
 </body>
 </html>
