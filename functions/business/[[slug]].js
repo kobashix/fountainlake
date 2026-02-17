@@ -1,4 +1,5 @@
-import { getPostList, getSinglePost } from '../utils/cms';
+// functions/business/[[path]].js
+import { getBusinessList, getSingleBusiness } from '../utils/cms'; // Import new functions
 import { renderLayout } from '../utils/layout';
 
 export async function onRequest(context) {
@@ -7,8 +8,8 @@ export async function onRequest(context) {
 
   // --- SCENARIO 1: The Directory (List View) ---
   if (path.length === 0) {
-    // Fetch posts from the 'business' category
-    const posts = await getPostList("business", 50); // Fetch more for a directory
+    // USE THE NEW CPT FUNCTION
+    const posts = await getBusinessList(50); 
 
     const directoryGrid = posts.map(biz => `
       <div class="biz-card">
@@ -17,7 +18,7 @@ export async function onRequest(context) {
         </div>
         <div class="biz-info">
           <h3>${biz.title}</h3>
-          <div class="biz-excerpt">${biz.excerpt.replace(/<[^>]*>?/gm, '').substring(0, 80)}...</div>
+          <div class="biz-excerpt">${biz.excerpt ? biz.excerpt.replace(/<[^>]*>?/gm, '').substring(0, 80) : 'Support local business.'}...</div>
           <a href="/business/${biz.slug}" class="btn-outline">View Profile</a>
         </div>
       </div>
@@ -45,12 +46,10 @@ export async function onRequest(context) {
   // --- SCENARIO 2: Business Profile (Single Page) ---
   if (path.length === 1) {
     const slug = path[0];
-    // Check if user is trying to access the submit form directly
-    if (slug === "submit.html" || slug === "submit") {
-        return context.next(); // Let Cloudflare serve the static file
-    }
+    if (slug === "submit.html") return context.next();
 
-    const post = await getSinglePost(slug);
+    // USE THE NEW SINGLE CPT FUNCTION
+    const post = await getSingleBusiness(slug);
 
     if (!post) {
       return new Response("Business Not Found", { status: 404 });
@@ -58,7 +57,8 @@ export async function onRequest(context) {
 
     const content = `
       <div class="biz-profile-header">
-        <div class="biz-profile-cover"></div> <div class="biz-profile-meta container">
+        <div class="biz-profile-cover"></div> 
+        <div class="biz-profile-meta container">
           <img src="${post.featuredImage?.node?.sourceUrl || '/assets/img/default-logo.png'}" class="biz-profile-logo">
           <div class="biz-profile-text">
             <h1>${post.title}</h1>

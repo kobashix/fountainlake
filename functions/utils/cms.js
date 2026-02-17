@@ -71,3 +71,55 @@ export async function getSinglePost(slug) {
   const data = await fetchAPI(query, { slug });
   return data?.post || null;
 }
+
+// functions/utils/cms.js
+
+// ... keep your existing imports and fetchAPI function ...
+
+// --- NEW FUNCTION FOR CPT BUSINESSES ---
+export async function getBusinessList(first = 50) {
+  const query = `
+    query GetBusinesses($first: Int!) {
+      businesses(first: $first, where: { status: PUBLISH }) {
+        nodes {
+          title
+          slug
+          excerpt
+          content
+          featuredImage {
+            node {
+              sourceUrl(size: LARGE)
+            }
+          }
+          # If you have custom fields like phone/address, they go here.
+          # Example:
+          # businessData {
+          #   phone
+          #   address
+          # }
+        }
+      }
+    }
+  `;
+  const data = await fetchAPI(query, { first });
+  return data?.businesses?.nodes || [];
+}
+
+// Update getSinglePost to look for businesses too if needed
+export async function getSingleBusiness(slug) {
+  const query = `
+    query GetBusiness($slug: ID!) {
+      business(id: $slug, idType: SLUG) {
+        title
+        content
+        featuredImage {
+          node {
+            sourceUrl(size: LARGE)
+          }
+        }
+      }
+    }
+  `;
+  const data = await fetchAPI(query, { slug });
+  return data?.business || null;
+}
