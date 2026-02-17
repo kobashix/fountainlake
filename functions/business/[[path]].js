@@ -4,16 +4,18 @@ import { renderLayout } from '../utils/layout';
 // Helper to format the Google Map object into a string
 function formatAddress(loc) {
   if (!loc) return null;
-  // Combine parts: "123 Main St, Hot Springs, AR"
   const parts = [loc.streetAddress, loc.city, loc.state].filter(Boolean);
   return parts.join(", ");
 }
 
-// Helper to format category list
+// Helper to format category list (handles both string and array)
 function formatCategory(cat) {
   if (!cat) return "Local Business";
-  if (Array.isArray(cat)) return cat.join(", "); // Handle Multi-select
-  return cat; // Handle Single-select
+  if (Array.isArray(cat)) {
+    // If it's an array of objects/strings, map/join them
+    return cat.map(c => (typeof c === 'object' ? c.name : c)).join(", "); 
+  }
+  return cat; // Handle Single string
 }
 
 export async function onRequest(context) {
