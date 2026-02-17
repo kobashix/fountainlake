@@ -37,3 +37,82 @@ a { text-decoration: none; color: inherit; }
 .post-body { background: white; padding: 3rem; margin-top: -3rem; position: relative; border-radius: 8px 8px 0 0; box-shadow: 0 -4px 6px rgba(0,0,0,0.05); }
 .post-body p { line-height: 1.8; margin-bottom: 1.5rem; font-size: 1.1rem; }
 .post-body h2 { margin-top: 2rem; color: var(--primary); }
+
+/* --- Directory Header --- */
+.directory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 1rem;
+}
+.directory-header h1 { margin: 0; color: #1e293b; }
+.directory-header p { margin: 0; color: #64748b; }
+
+/* --- Business Grid --- */
+.biz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* --- Business Card --- */
+.biz-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 2rem 1.5rem;
+}
+.biz-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  border-color: #d4af37;
+}
+
+.biz-logo-wrapper {
+  height: 80px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.biz-logo {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.biz-info h3 { margin: 0.5rem 0; font-size: 1.1rem; }
+.biz-excerpt { font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem; line-height: 1.4; }
+.btn-outline {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: 0.2s;
+}
+.btn-outline:hover { background: #1e293b; color: white; }
+
+/* --- Profile Page --- */
+.biz-profile-cover { height: 150px; background: #1e293b; }
+.biz-profile-meta { display: flex; align-items: flex-end; margin-top: -50px; padding-bottom: 2rem; border-bottom: 1px solid #e2e8f0; }
+.biz-profile-logo {
+  width: 120px; height: 120px;
+  background: white;
+  padding: 5px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  object-fit: contain;
+  margin-right: 1.5rem;
+}
+.biz-profile-text h1 { margin: 0 0 0.5rem 0; font-size: 2rem; }
+.badge { background: #dcfce7; color: #166534; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+
+.biz-profile-body { display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; margin-top: 2rem; }
+.sidebar-box { background: #f8fafc; padding: 1.5rem; border-radius: 8px; border: 1px solid #e2e8f0; }
+.btn-full { display: block; background: #d4af37; color: black; text-align: center; padding: 0.75rem; border-radius: 4px; font-weight: bold; margin-top: 1rem; }

@@ -1,79 +1,89 @@
-// functions/news/[[path]].js
 import { getPostList, getSinglePost } from '../utils/cms';
 import { renderLayout } from '../utils/layout';
 
 export async function onRequest(context) {
-  const { request, params } = context;
-  const url = new URL(request.url);
-  
-  // path is an array. 
-  // [] -> /news (Index)
-  // ["my-story"] -> /news/my-story (Single Post)
+  const { params } = context;
   const path = params.path || [];
 
-  try {
-    // SCENARIO 1: NEWS INDEX (List View)
-    if (path.length === 0) {
-      const posts = await getPostList("business");
-      
-      const cardsHTML = posts.map(post => `
-        <article class="news-card">
-          <div class="card-image" style="background-image: url('${post.featuredImage?.node?.sourceUrl || '/assets/img/default.jpg'}')"></div>
-          <div class="card-content">
-            <span class="date">${new Date(post.date).toLocaleDateString()}</span>
-            <h2><a href="/news/${post.slug}">${post.title}</a></h2>
-            <div class="excerpt">${post.excerpt}</div>
-          </div>
-        </article>
-      `).join('');
+  // --- SCENARIO 1: The Directory (List View) ---
+  if (path.length === 0) {
+    // Fetch posts from the 'business' category
+    const posts = await getPostList("business", 50); // Fetch more for a directory
 
-      const pageContent = `
-        <header class="page-header">
-          <div class="container">
-            <h1>Latest News</h1>
-          </div>
-        </header>
-        <div class="container grid-layout">
-          ${cardsHTML}
+    const directoryGrid = posts.map(biz => `
+      <div class="biz-card">
+        <div class="biz-logo-wrapper">
+           <img src="${biz.featuredImage?.node?.sourceUrl || '/assets/img/default-logo.png'}" alt="${biz.title}" class="biz-logo">
         </div>
-      `;
+        <div class="biz-info">
+          <h3>${biz.title}</h3>
+          <div class="biz-excerpt">${biz.excerpt.replace(/<[^>]*>?/gm, '').substring(0, 80)}...</div>
+          <a href="/business/${biz.slug}" class="btn-outline">View Profile</a>
+        </div>
+      </div>
+    `).join('');
 
-      return new Response(renderLayout({ title: "News", content: pageContent, activeTab: "/news" }), {
-        headers: { "Content-Type": "text/html" }
-      });
+    const content = `
+      <div class="directory-header">
+        <div>
+          <h1>Business Directory</h1>
+          <p>Support Local. Shop Fountain Lake.</p>
+        </div>
+        <a href="/business/submit.html" class="btn">Promote Your Business</a>
+      </div>
+      
+      <div class="biz-grid">
+        ${directoryGrid}
+      </div>
+    `;
+
+    return new Response(renderLayout({ title: "Business Directory", content, activeTab: "/business" }), {
+      headers: { "Content-Type": "text/html" }
+    });
+  }
+
+  // --- SCENARIO 2: Business Profile (Single Page) ---
+  if (path.length === 1) {
+    const slug = path[0];
+    // Check if user is trying to access the submit form directly
+    if (slug === "submit.html" || slug === "submit") {
+        return context.next(); // Let Cloudflare serve the static file
     }
 
-    // SCENARIO 2: SINGLE POST
-    if (path.length === 1) {
-      const slug = path[0];
-      const post = await getSinglePost(slug);
+    const post = await getSinglePost(slug);
 
-      if (!post) {
-        return new Response("Post Not Found", { status: 404 });
-      }
+    if (!post) {
+      return new Response("Business Not Found", { status: 404 });
+    }
 
-      const pageContent = `
-        <article class="single-post">
-          <header class="post-header" style="background-image: url('${post.featuredImage?.node?.sourceUrl || ''}')">
-            <div class="header-overlay">
-              <div class="container">
-                <h1>${post.title}</h1>
-                <span class="date">${new Date(post.date).toLocaleDateString()}</span>
-              </div>
-            </div>
-          </header>
-          <div class="container post-body">
-            ${post.content}
+    const content = `
+      <div class="biz-profile-header">
+        <div class="biz-profile-cover"></div> <div class="biz-profile-meta container">
+          <img src="${post.featuredImage?.node?.sourceUrl || '/assets/img/default-logo.png'}" class="biz-profile-logo">
+          <div class="biz-profile-text">
+            <h1>${post.title}</h1>
+            <span class="badge">Verified Local Business</span>
           </div>
-        </article>
-      `;
+        </div>
+      </div>
 
-      return new Response(renderLayout({ title: post.title, content: pageContent, activeTab: "/news" }), {
-        headers: { "Content-Type": "text/html" }
-      });
-    }
+      <div class="container biz-profile-body">
+        <div class="biz-main-content">
+           <h2>About This Business</h2>
+           ${post.content}
+        </div>
+        <div class="biz-sidebar">
+           <div class="sidebar-box">
+              <h3>Contact</h3>
+              <p>📍 Fountain Lake Area</p>
+              <a href="#" class="btn-full">Visit Website</a>
+           </div>
+        </div>
+      </div>
+    `;
 
-  } catch (err) {
-    return new Response(`Error: ${err.message}`, { status: 500 });
+    return new Response(renderLayout({ title: post.title, content, activeTab: "/business" }), {
+      headers: { "Content-Type": "text/html" }
+    });
   }
 }
