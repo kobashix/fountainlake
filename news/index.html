@@ -1,154 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Local News | Fountain Lake Network</title>
-  <meta name="description" content="Local news and incident updates for Fountain Lake, Arkansas." />
-  <link rel="stylesheet" href="/assets/css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News | Fountain Lake Network</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-
 <body>
-  <main class="container">
-    <div style="margin-top: 2rem;">
-      <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Local News</h2>
-      <p style="color: var(--text-muted); max-width: 600px; margin-bottom: 2rem;">
-        Incident reports, public safety updates, and community news affecting Fountain Lake.
-      </p>
+  
+  <nav class="navbar">
+    <a href="/" class="brand">FLN</a>
+    <div class="links">
+      <a href="/news">News</a>
+      <a href="/business">Business</a>
+      <a href="/events">Events</a>
+      <a href="/politics">Politics</a>
     </div>
+  </nav>
 
-    <div id="news-list">
-      <p class="muted">Loading updates...</p>
-    </div>
+  <main class="container">
+    <header class="section-header">
+      <h1>Latest News</h1>
+    </header>
     
-    <div id="debug-box" style="display:none; margin-top: 2rem; padding: 1rem; background: #331111; color: #ff9999; border: 1px solid red; font-family: monospace;"></div>
+    <div id="content-feed" class="grid-layout"></div>
   </main>
 
-  <script src="/assets/js/script.js"></script>
-
-  <script>
-    // 1. Configuration
-    const ENDPOINT = "https://cms.fountainlake.net/graphql";
-    const container = document.getElementById("news-list");
-    const debugBox = document.getElementById("debug-box");
-
-    // 2. Router Logic
-    const path = window.location.pathname.replace(/\/$/, ""); 
-    const parts = path.split("/");
-    const isSingle = parts.length > 2 && parts[parts.length - 1] !== "news";
-
-    // 3. Initialize
-    if (isSingle) {
-      loadSingleArticle(parts[parts.length - 1]);
-    } else {
-      loadNewsList();
-    }
-
-    // --- FUNCTION: Load List (SAFE MODE) ---
-    function loadNewsList() {
-      // We removed 'excerpt' and 'date' to ensure compatibility with your schema.
-      const query = `
-        {
-          newsItems(first: 20, where: { status: PUBLISH }) {
-            nodes {
-              id
-              title
-              slug
-            }
-          }
-        }
-      `;
-
-      fetchData(query).then(data => {
-        if (!data || !data.newsItems) {
-           // If we get here, the error is already logged in the catch block
-           return;
-        }
-
-        const items = data.newsItems.nodes;
-        if (!items.length) {
-          container.innerHTML = "<p class='muted'>No news articles found.</p>";
-          return;
-        }
-        
-        // Render Grid
-        container.className = "grid"; 
-        container.innerHTML = items.map(item => `
-          <article class="card news-card">
-            <span class="kicker">NEWS</span>
-            <h3><a href="/news/${item.slug}">${item.title}</a></h3>
-            <p>Click to read full story...</p>
-            <a href="/news/${item.slug}" class="btn btn-outline">Read More &rarr;</a>
-          </article>
-        `).join("");
-      });
-    }
-
-    // --- FUNCTION: Load Single Article ---
-    function loadSingleArticle(slug) {
-      container.innerHTML = "<p class='muted'>Fetching article...</p>";
-      
-      const query = `
-        {
-          newsItemBy(slug: "${slug}") {
-            title
-            content
-          }
-        }
-      `;
-
-      fetchData(query).then(data => {
-        const post = data ? data.newsItemBy : null;
-        
-        if (!post) {
-          container.innerHTML = "<h2>Article not found</h2><a href='/news/' class='btn'>Back to News</a>";
-          return;
-        }
-
-        document.querySelector('h2.brand').style.display = 'none';
-        document.querySelector('main > div > p').style.display = 'none';
-
-        container.className = "article-container";
-        container.innerHTML = `
-          <a href="/news/" class="kicker" style="display:inline-block; margin-bottom:1rem; cursor:pointer;">&larr; Back to News</a>
-          <h1 style="font-size: 2.5rem; margin-bottom: 2rem; color: white; line-height: 1.2;">${post.title}</h1>
-          <div class="article-body" style="font-size: 1.1rem; line-height: 1.8; max-width: 800px; color: #e2e8f0;">
-            ${post.content}
-          </div>
-        `;
-      });
-    }
-
-    // --- HELPER: Fetcher with Error Display ---
-    async function fetchData(query) {
-      try {
-        const res = await fetch(ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query })
-        });
-        
-        const json = await res.json();
-        
-        // If GraphQL returned specific errors (field missing, etc.)
-        if (json.errors) {
-          showError("GraphQL Error: " + json.errors.map(e => e.message).join(", "));
-          return null;
-        }
-        
-        return json.data;
-      } catch (e) {
-        showError("Network/API Error: " + e.message);
-        return null;
-      }
-    }
-
-    function showError(msg) {
-        console.error(msg);
-        container.innerHTML = `<p class='error' style='color: #ff9999;'>System Error (See bottom of page)</p>`;
-        debugBox.style.display = "block";
-        debugBox.innerText = msg;
-    }
-  </script>
+  <script src="/assets/js/app.js"></script>
 </body>
 </html>

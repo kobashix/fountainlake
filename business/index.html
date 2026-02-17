@@ -1,218 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Local Business Directory | Fountain Lake Network</title>
-  <link rel="stylesheet" href="/assets/css/style.css" />
-  <style>
-    /* Specific styles for the map */
-    .map-container {
-      width: 100%;
-      height: 300px;
-      margin-top: 2rem;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: var(--bg-dark);
-    }
-    .map-container iframe {
-      width: 100%;
-      height: 100%;
-      border: 0;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News | Fountain Lake Network</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
-  <script src="/assets/js/script.js"></script>
+  
+  <nav class="navbar">
+    <a href="/" class="brand">FLN</a>
+    <div class="links">
+      <a href="/news">News</a>
+      <a href="/business">Business</a>
+      <a href="/events">Events</a>
+      <a href="/politics">Politics</a>
+    </div>
+  </nav>
 
   <main class="container">
-    <div id="header-area" style="margin-top: 2rem;">
-      <h2 class="brand" style="color:white; margin-bottom: 0.5rem;">Business Directory</h2>
-      <p style="color: var(--text-muted); max-width: 600px; margin-bottom: 2rem;">
-        Support local. Here are the businesses serving the Fountain Lake community.
-      </p>
-    </div>
-
-    <div id="business-container" class="grid">
-      <p class="muted">Loading...</p>
-    </div>
-
-    <div id="debug-box" style="display:none; margin-top: 2rem; padding: 1rem; background: #330000; color: #ff9999; border: 1px solid red; font-family: monospace; white-space: pre-wrap;"></div>
+    <header class="section-header">
+      <h1>Latest News</h1>
+    </header>
+    
+    <div id="content-feed" class="grid-layout"></div>
   </main>
 
-  <script>
-    const ENDPOINT = "https://cms.fountainlake.net/graphql";
-    const container = document.getElementById("business-container");
-    const debugBox = document.getElementById("debug-box");
-
-    // Router Logic
-    const path = window.location.pathname.replace(/\/$/, ""); 
-    const parts = path.split("/");
-    const slug = parts.length > 2 && parts[parts.length - 1] !== "business" ? parts[parts.length - 1] : null;
-
-    // --- MAIN QUERY ---
-    const MASTER_QUERY = `
-      {
-        businesses(first: 100, where: { orderby: { field: TITLE, order: ASC } }) {
-          nodes {
-            title
-            slug
-            businessFields {
-              description
-              phone
-              website
-              category
-              location {
-                streetAddress
-                city
-                state
-                postCode
-              }
-            }
-          }
-        }
-      }
-    `;
-
-    fetchData(MASTER_QUERY).then(data => {
-      if (!data || !data.businesses) return;
-      
-      const allBusinesses = data.businesses.nodes;
-
-      if (slug) {
-        renderSingleBusiness(slug, allBusinesses);
-      } else {
-        renderList(allBusinesses);
-      }
-    });
-
-    // --- RENDER LIST ---
-    function renderList(items) {
-      if (!items.length) {
-        container.innerHTML = "<p class='muted'>No businesses found.</p>";
-        return;
-      }
-
-      container.innerHTML = items.map(biz => {
-        const fields = biz.businessFields || {};
-        const cat = Array.isArray(fields.category) ? fields.category.join(", ") : fields.category;
-        const catLabel = cat ? `<span class="kicker" style="margin-bottom:0.5rem; display:inline-block;">${cat}</span>` : '';
-
-        return `
-          <article class="card business-card">
-            ${catLabel}
-            <h3><a href="/business/${biz.slug}">${biz.title}</a></h3>
-            <p style="color: #cbd5e1; font-size: 0.95rem;">${fields.description ? fields.description.substring(0, 100) + '...' : ''}</p>
-            <a href="/business/${biz.slug}" class="btn btn-outline" style="width:100%; text-align:center; margin-top:auto;">View Details &rarr;</a>
-          </article>
-        `;
-      }).join("");
-    }
-
-    // --- RENDER SINGLE ---
-    function renderSingleBusiness(slug, allBusinesses) {
-      const biz = allBusinesses.find(b => b.slug === slug);
-
-      if (!biz) {
-        document.getElementById('header-area').style.display = 'none';
-        container.innerHTML = `<h2>Business not found</h2><a href='/business/' class='btn'>Back to Directory</a>`;
-        return;
-      }
-
-      // Hide Header & Switch Layout
-      document.getElementById('header-area').style.display = 'none';
-      container.className = "article-container"; 
-
-      const fields = biz.businessFields || {};
-      
-      // 1. Build Address & Map Links
-      let addressBlock = "";
-      let mapEmbed = "";
-      let gpsBtn = "";
-
-      if (fields.location && fields.location.streetAddress) {
-         // Clean "null" zip code issue
-         const zip = fields.location.postCode ? fields.location.postCode : '';
-         const cleanAddress = `${fields.location.streetAddress}, ${fields.location.city}, ${fields.location.state} ${zip}`;
-         
-         // Create Google Maps URL
-         const encodedAddr = encodeURIComponent(cleanAddress);
-         const googleMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddr}`;
-         
-         // Create Elements
-         addressBlock = `<p style="color:white; margin-bottom:1rem; font-size: 1.1rem;">📍 ${cleanAddress}</p>`;
-         gpsBtn = `<a href="${googleMapsLink}" target="_blank" class="btn btn-outline" style="border-color: var(--cobra-gold); color: var(--cobra-gold);">🗺️ Get Directions</a>`;
-         
-         // Create Embed Iframe
-         mapEmbed = `
-           <div class="map-container">
-             <iframe 
-               src="https://maps.google.com/maps?q=${encodedAddr}&t=&z=15&ie=UTF8&iwloc=&output=embed" 
-               frameborder="0" 
-               scrolling="no" 
-               marginheight="0" 
-               marginwidth="0">
-             </iframe>
-           </div>
-         `;
-      }
-
-      // 2. Buttons
-      const phoneBtn = fields.phone ? `<a href="tel:${fields.phone}" class="btn">📞 Call ${fields.phone}</a>` : '';
-      const webBtn = fields.website ? `<a href="${fields.website}" target="_blank" class="btn btn-outline">🌐 Visit Website</a>` : '';
-      
-      // 3. Category
-      const cat = Array.isArray(fields.category) ? fields.category.join(", ") : fields.category;
-      const catLabel = cat ? `<span class="kicker" style="margin-bottom:1rem; display:inline-block;">${cat}</span>` : '';
-
-      // 4. Render
-      container.innerHTML = `
-        <a href="/business/" class="kicker" style="cursor:pointer; display:inline-block; margin-bottom:1rem;">&larr; Back to Directory</a>
-        <br>
-        ${catLabel}
-        <h1 style="font-size: 2.5rem; color: white; margin-bottom: 0.5rem; line-height: 1.1;">${biz.title}</h1>
-        ${addressBlock}
-        
-        <div style="font-size: 1.1rem; line-height: 1.6; color: #e2e8f0; margin: 2rem 0; padding: 1.5rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px;">
-          ${fields.description || 'No description provided.'}
-        </div>
-
-        <div style="display:flex; gap: 1rem; flex-wrap: wrap;">
-          ${gpsBtn}
-          ${phoneBtn}
-          ${webBtn}
-        </div>
-
-        ${mapEmbed}
-      `;
-    }
-
-    // --- HELPER ---
-    async function fetchData(query) {
-      try {
-        const res = await fetch(ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query })
-        });
-        const json = await res.json();
-        if (json.errors) {
-            showError("GraphQL Error:\n" + JSON.stringify(json.errors, null, 2));
-            return null;
-        }
-        return json.data;
-      } catch (e) {
-        showError("Network Error:\n" + e.message);
-        return null;
-      }
-    }
-
-    function showError(msg) {
-        console.error(msg);
-        debugBox.style.display = "block";
-        debugBox.innerText += "--------------------------------\n" + msg + "\n";
-    }
-  </script>
+  <script src="/assets/js/app.js"></script>
 </body>
 </html>

@@ -151,3 +151,30 @@ h1, h2, h3, .brand {
   .nav-list { gap: 1rem; flex-wrap: wrap; }
   .site-title { font-size: 2.5rem; }
 }
+/* Dynamic Grid */
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+/* Card Design */
+.card {
+  background: #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+.card:hover { transform: translateY(-5px); }
+
+.card-img {
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+}
+
+.card-body { padding: 1.5rem; }
+.card-body h3 { margin: 0.5rem 0; font-size: 1.25rem; }
+.card-body a { color: white; text-decoration: none; }
+.card-body .date { color: var(--cobra-gold); font-size: 0.8rem; text-transform: uppercase; }

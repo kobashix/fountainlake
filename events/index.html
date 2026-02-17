@@ -1,26 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <title>Events | Fountain Lake Network</title>
-
-  <meta name="description" content="Community events around Fountain Lake, Arkansas." />
-  <meta name="robots" content="index, follow" />
-
-  <link rel="stylesheet" href="/assets/css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News | Fountain Lake Network</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-
 <body>
-  <main>
+  
+  <nav class="navbar">
+    <a href="/" class="brand">FLN</a>
+    <div class="links">
+      <a href="/news">News</a>
+      <a href="/business">Business</a>
+      <a href="/events">Events</a>
+      <a href="/politics">Politics</a>
+    </div>
+  </nav>
 
-    <article class="content">
-      <h2>Events</h2>
-      <p>Upcoming community events, gatherings, and meetings around Fountain Lake.</p>
-      <p class="back-link"><a href="/">← Back to Home</a></p>
-    </article>
+  <main class="container">
+    <header class="section-header">
+      <h1>Latest News</h1>
+    </header>
+    
+    <div id="content-feed" class="grid-layout"></div>
   </main>
-    <script src="/assets/js/script.js"></script>
+
+  <script src="/assets/js/app.js"></script>
 </body>
 </html>
