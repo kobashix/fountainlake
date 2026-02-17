@@ -64,7 +64,7 @@ export async function getSinglePost(slug) {
   return data?.post || null;
 }
 
-// --- 2. BUSINESS LISTINGS (Custom Post Type) ---
+// --- 2. BUSINESS LISTINGS (Fixed for Google Maps & Categories) ---
 
 export async function getBusinessList(first = 50) {
   const query = `
@@ -78,10 +78,17 @@ export async function getBusinessList(first = 50) {
             node { sourceUrl(size: LARGE) }
           }
           businessFields {
-            location
             phone
             website
-            category
+            # Handle List (Multi-select)
+            category 
+            # Handle Google Map Object
+            location {
+              streetAddress
+              city
+              state
+              zipCode
+            }
           }
         }
       }
@@ -101,11 +108,16 @@ export async function getSingleBusiness(slug) {
           node { sourceUrl(size: LARGE) }
         }
         businessFields {
-          location
           phone
           website
           description
           category
+          location {
+            streetAddress
+            city
+            state
+            zipCode
+          }
         }
       }
     }
