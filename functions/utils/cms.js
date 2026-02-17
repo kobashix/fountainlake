@@ -25,12 +25,13 @@ async function fetchAPI(query, variables = {}) {
   }
 }
 
-// --- 1. STANDARD POSTS (News, Politics, School, Events) ---
+// --- 1. NEWS ITEMS (News, Politics, School) ---
+// Switched from 'posts' to 'newsItems' based on your structure.
 
 export async function getPostList(categoryName, first = 12) {
   const query = `
-    query GetPosts($categoryName: String!, $first: Int!) {
-      posts(first: $first, where: { categoryName: $categoryName }) {
+    query GetNewsItems($categoryName: String, $first: Int!) {
+      newsItems(first: $first, where: { categoryName: $categoryName, status: PUBLISH }) {
         nodes {
           title
           date
@@ -44,13 +45,13 @@ export async function getPostList(categoryName, first = 12) {
     }
   `;
   const data = await fetchAPI(query, { categoryName, first });
-  return data?.posts?.nodes || [];
+  return data?.newsItems?.nodes || [];
 }
 
 export async function getSinglePost(slug) {
   const query = `
-    query GetPost($slug: ID!) {
-      post(id: $slug, idType: SLUG) {
+    query GetNewsItem($slug: ID!) {
+      newsItem(id: $slug, idType: SLUG) {
         title
         date
         content
@@ -61,10 +62,10 @@ export async function getSinglePost(slug) {
     }
   `;
   const data = await fetchAPI(query, { slug });
-  return data?.post || null;
+  return data?.newsItem || null;
 }
 
-// --- 2. BUSINESS LISTINGS (Fixed Location Object) ---
+// --- 2. BUSINESS LISTINGS ---
 
 export async function getBusinessList(first = 50) {
   const query = `
@@ -81,7 +82,6 @@ export async function getBusinessList(first = 50) {
             phone
             website
             category
-            # FIX: Location is an object, must request subfields
             location {
               streetAddress
               city
@@ -111,7 +111,6 @@ export async function getSingleBusiness(slug) {
           website
           description
           category
-          # FIX: Location is an object, must request subfields
           location {
             streetAddress
             city
@@ -127,11 +126,12 @@ export async function getSingleBusiness(slug) {
 }
 
 // --- 3. EVENTS (Calendar Mode) ---
+// Now querying 'newsItems' with category 'events'
 
 export async function getEventList(first = 20) {
   const query = `
     query GetEvents($first: Int!) {
-      posts(first: $first, where: { categoryName: "events" }) {
+      newsItems(first: $first, where: { categoryName: "events", status: PUBLISH }) {
         nodes {
           title
           slug
@@ -140,6 +140,7 @@ export async function getEventList(first = 20) {
             node { sourceUrl(size: LARGE) }
           }
           date 
+          # Ensure your News Items support these ACF fields!
           eventFields {
             eventDate
             eventTime
@@ -150,13 +151,13 @@ export async function getEventList(first = 20) {
     }
   `;
   const data = await fetchAPI(query, { first });
-  return data?.posts?.nodes || [];
+  return data?.newsItems?.nodes || [];
 }
 
 export async function getSingleEvent(slug) {
   const query = `
     query GetEvent($slug: ID!) {
-      post(id: $slug, idType: SLUG) {
+      newsItem(id: $slug, idType: SLUG) {
         title
         content
         featuredImage {
@@ -172,5 +173,5 @@ export async function getSingleEvent(slug) {
     }
   `;
   const data = await fetchAPI(query, { slug });
-  return data?.post || null;
+  return data?.newsItem || null;
 }
