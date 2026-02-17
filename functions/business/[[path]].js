@@ -1,6 +1,21 @@
 import { getBusinessList, getSingleBusiness } from '../utils/cms';
 import { renderLayout } from '../utils/layout';
 
+// Helper to format the Google Map object into a string
+function formatAddress(loc) {
+  if (!loc) return null;
+  // Combine parts: "123 Main St, Hot Springs, AR"
+  const parts = [loc.streetAddress, loc.city, loc.state].filter(Boolean);
+  return parts.join(", ");
+}
+
+// Helper to format category list
+function formatCategory(cat) {
+  if (!cat) return "Local Business";
+  if (Array.isArray(cat)) return cat.join(", "); // Handle Multi-select
+  return cat; // Handle Single-select
+}
+
 export async function onRequest(context) {
   const { params } = context;
   const path = params.path || [];
@@ -10,7 +25,9 @@ export async function onRequest(context) {
     const businesses = await getBusinessList(50);
 
     const cards = businesses.map(biz => {
-      const acf = biz.businessFields || {}; 
+      const acf = biz.businessFields || {};
+      const address = formatAddress(acf.location);
+      const cat = formatCategory(acf.category);
       
       return `
       <div class="biz-card">
@@ -21,9 +38,9 @@ export async function onRequest(context) {
           <h3>${biz.title}</h3>
           
           <div class="biz-meta">
-            ${acf.category ? `<div class="badge-sm">${acf.category}</div>` : ''}
+            <div class="badge-sm">${cat}</div>
             ${acf.phone ? `<div>📞 ${acf.phone}</div>` : ''}
-            ${acf.location ? `<div>📍 ${acf.location}</div>` : ''}
+            ${address ? `<div>📍 ${address}</div>` : ''}
           </div>
 
           <a href="/business/${biz.slug}" class="btn-outline">View Profile</a>
@@ -52,6 +69,8 @@ export async function onRequest(context) {
     if (!biz) return new Response("Not Found", { status: 404 });
 
     const acf = biz.businessFields || {};
+    const address = formatAddress(acf.location);
+    const cat = formatCategory(acf.category);
 
     const content = `
       <div class="biz-profile-header">
@@ -59,7 +78,7 @@ export async function onRequest(context) {
           <img src="${biz.featuredImage?.node?.sourceUrl || '/assets/img/default-logo.png'}" class="biz-profile-logo">
           <div>
             <h1>${biz.title}</h1>
-            ${acf.category ? `<span class="badge">${acf.category}</span>` : '<span class="badge">Local Business</span>'}
+            <span class="badge">${cat}</span>
           </div>
         </div>
       </div>
@@ -72,7 +91,7 @@ export async function onRequest(context) {
         <div class="biz-sidebar">
            <div class="sidebar-box">
               <h3>Contact Info</h3>
-              ${acf.location ? `<p><strong>Location:</strong><br>${acf.location}</p>` : ''}
+              ${address ? `<p><strong>Location:</strong><br>${address}<br>${acf.location?.zipCode || ''}</p>` : ''}
               ${acf.phone ? `<p><strong>Phone:</strong><br><a href="tel:${acf.phone}">${acf.phone}</a></p>` : ''}
               ${acf.website ? `<a href="${acf.website}" target="_blank" class="btn-full">Visit Website</a>` : ''}
            </div>
